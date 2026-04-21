@@ -1,0 +1,20 @@
+[Hardware]
+System,Cores/Node,Memory/Node,Specialty Hardware,GPU memory/Device,GPU devices/Node,# of Nodes,SU/CPU-hr,SU/GB-hr,SU/GPU-hr
+Rivanna,40,375 GB,-,-,-,182,0.177,0.0143,0
+Afton,96,750 GB,-,-,-,280,0.464,0.0284,0
+Rivanna,40,750 GB,-,-,-,40,0.13,0.009,0
+Afton,96,1464 GB,-,-,-,20,0.418,0.0244,0
+Afton,128,976 GB,GPU: A100,40 GB,8,2,0.311,0.0292,46.381
+Afton,128,1953 GB,GPU: A100,80 GB,8,18,0.403,0.043,50.89
+Afton,96,1464 GB,GPU: A40,48 GB,8,12,0.34,0.02,18.669
+Afton,48,250 GB,GPU: A6000,48 GB,8,14,0.383,0.062,14.273
+Afton,40,374 GB,GPU: RTX2080Ti,11 GB,10,2,0.388,0.041,7.757
+Afton,32,125 GB,GPU: RTX3090,24 GB,4,4,0.303,0.076,11.323
+Afton,36,375 GB,GPU: V100,32 GB,4,2,0.058,0.005,2.096
+[Queues]
+Partition,Purpose,Max time / job,Max nodes / job,Max cores / job,Max cores / node,Default memory / core,Max memory / node / job
+standard,For jobs on a single compute node,7 days,1,96,96,9 GB,1462 GB
+parallel,For large parallel jobs on up to 64 nodes,3 days,64,6000,96,8 GB,750 GB
+gpu,For jobs using general purpose graphical processing units,3 days,4,32GPU,128,6 GB,1953 GB
+gpu-mig,For smaller GPU jobs,3 days,1,2,14 MIGs/user,4000 MB,30000 MB
+interactive,For quick interactive sessions,12 hours,2,24/2GPU,96,6 GB,216 GB

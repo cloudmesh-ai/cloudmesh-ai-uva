@@ -1,0 +1,80 @@
+ubuntu:
+  ubuntu:
+    partition: "ubuntu"
+    account: "ubuntu"
+    gres: "none"
+macos:
+  macos:
+    partition: "macos"
+    account: "macos"
+    gres: "none"
+rivanna:
+  parallel:
+    partition: "parallel"
+    account: "bii_dsc_community"
+    nodes: 2
+    ntask-per-node: 4
+  v100:
+    gres: "gpu:v100:1"
+    partition: "bii-gpu"
+    account: "bii_dsc_community"
+  a100:
+    gres: "gpu:a100:1"
+    partition: "gpu"
+    account: "bii_dsc_community"
+  a100-80gb:
+    gres: "gpu:a100:1"
+    partition: "gpu"
+    account: "bii_dsc_community"
+    constraint: "a100_80gb"
+  a100-dgx:
+    gres: "gpu:a100:1"
+    reservation: "bi_fox_dgx"
+    partition: "bii-gpu"
+    account: "bii_dsc_community"
+  k80:
+    gres: "gpu:k80:1"
+    partition: "gpu"
+    account: "bii_dsc_community"
+  p100:
+    gres: "gpu:p100:1"
+    partition: "gpu"
+    account: "bii_dsc_community"
+  a6000:
+    gres: "gpu:a6000:1"
+    partition: "gpu"
+    account: "bii_dsc_community"
+  a100-pod:
+    gres: "gpu:a100:1"
+    account: "bii_dsc_community"
+    constraint: "gpupod"
+    partition: "gpu"
+  rtx2080:
+    gres: "gpu:rtx2080:1"
+    partition: "gpu"
+    account: "bii_dsc_community"
+  rtx3090:
+    gres: "gpu:rtx3090:1"
+    partition: "gpu"
+    account: "bii_dsc_community"
+hipergator:
+  b200:
+    gres: "gpu:1"
+    partition: "hpg-b200"
+  l4:
+    gres: "gpu:1"
+    partition: "hpg-turin"   
+greene:
+  v100:
+    gres: "gpu:v100:1"
+  a100:
+    gres: "gpu:a100:1"
+maltlab:
+  rtx_titan:
+    gres: "gpu:rtx_titan:1"
+crusher:
+  default:
+    partition: "batch"          
+frontier:
+  default:
+    partition: "batch"
