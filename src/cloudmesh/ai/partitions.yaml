@@ -8,7 +8,7 @@ macos:
     partition: "macos"
     account: "macos"
     gres: "none"
-rivanna:
+uva:
   parallel:
     partition: "parallel"
     account: "bii_dsc_community"

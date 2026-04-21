@@ -62,7 +62,7 @@ def slurm_group():
     pass
 
 @slurm_group.command(name="info")
-@click.option("--host", default="rivanna", help="Host to use")
+@click.option("--host", default="uva", help="Host to use")
 @click.argument("key")
 def slurm_info(host, key):
     """Prints Slurm directive information."""
@@ -72,7 +72,7 @@ def slurm_info(host, key):
 
 @slurm_group.command(name="run")
 @click.option("--sbatch", help="Sbatch parameter")
-@click.option("--host", default="rivanna", help="Host to use")
+@click.option("--host", default="uva", help="Host to use")
 @click.argument("key", required=False)
 @click.option("--debug", is_flag=True, help="Enable debug mode")
 def slurm_run(sbatch, host, key, debug):
@@ -105,7 +105,7 @@ def image_build(deffile):
 # --- Other Commands ---
 @uva_group.command(name="login")
 @click.option("--sbatch", help="Sbatch parameter")
-@click.option("--host", default="rivanna", help="Host to use")
+@click.option("--host", default="uva", help="Host to use")
 @click.argument("key", required=False)
 @click.option("--debug", is_flag=True, help="Enable debug mode")
 def login_cmd(sbatch, host, key, debug):

@@ -7,7 +7,7 @@ from cloudmesh.common.StopWatch import StopWatch
 from cloudmesh.common.Shell import Shell
 
 class Uva:
-    def __init__(self, host="rivanna", debug=False):
+    def __init__(self, host="uva", debug=False):
         """
         Initialize the Uva class.
         """
