@@ -51,11 +51,17 @@ class Uva:
         """SSH on UVA by executing an interactive job command."""
         host = host or self.host
         
+        if not key:
+            available_keys = list(self.directive.get(host, {}).keys())
+            Console.error(f"No key provided for host {host}. Available keys: {', '.join(available_keys)}")
+            return
+
         # Start with base directives from the config
         try:
             directives = self.directive[host][key].copy()
         except KeyError:
-            Console.error(f"Key {key} not found for host {host}")
+            available_keys = list(self.directive.get(host, {}).keys())
+            Console.error(f"Key {key} not found for host {host}. Available keys: {', '.join(available_keys)}")
             return
 
         # Override with sbatch parameters if provided
