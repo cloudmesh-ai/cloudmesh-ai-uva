@@ -5,6 +5,8 @@ import os
 import re
 from rich.console import Console
 from rich.table import Table
+from cloudmesh.ai.uva import Uva
+
 @click.group()
 def uva_group():
     """
