@@ -14,6 +14,8 @@ dependencies = [
     "rich",
     "pytest",
     "cloudmesh-ai-common",
+    "questionary",
+    "textual",
 ]
 [tool.setuptools.dynamic]
 version = {file = "VERSION"}

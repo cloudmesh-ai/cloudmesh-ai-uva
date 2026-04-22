@@ -3,8 +3,12 @@ import webbrowser
 import csv
 import os
 import re
+import questionary
 from rich.console import Console
 from rich.table import Table
+from cloudmesh.ai.common import banner
+from textual.app import App, ComposeResult
+from textual.widgets import DataTable, Footer
 from cloudmesh.ai.uva import Uva
 
 @click.group()
@@ -105,14 +109,152 @@ def image_build(deffile):
     uva.create_apptainer_image(deffile)
 
 # --- Other Commands ---
+class PartitionSelectorApp(App):
+    """A Textual app to select a UVA partition from a table."""
+    CSS = """
+    Screen {
+        background: #f0f0f0;
+        color: #333333;
+    }
+    DataTable {
+        background: #ffffff;
+        color: #333333;
+    }
+    DataTable > .dp-row {
+        color: #333333;
+    }
+    DataTable > .dp-row:focus {
+        background: #e0e0e0;
+        color: #000000;
+    }
+    Footer {
+        background: #dddddd;
+        color: #333333;
+    }
+    """
+    BINDINGS = [
+        ("q", "quit", "Quit"), 
+        ("enter", "select", "Select"),
+        ("d", "select_default", "Default")
+    ]
+
+    def __init__(self, host, uva_instance):
+        super().__init__()
+        self.host = host
+        self.uva = uva_instance
+        self.selected_key = None
+        self.default_key = self.uva.get_default_partition(host)
+
+    def compose(self) -> ComposeResult:
+        yield DataTable()
+        yield Footer()
+
+    def on_mount(self) -> None:
+        table = self.query_one(DataTable)
+        table.cursor_type = "row"
+        
+        # Get data from Uva instance
+        header, choices = self.uva.get_partition_table_data(self.host)
+        if not header or not choices:
+            self.exit(None)
+            return
+
+        # Setup columns
+        columns = header.split(" | ")
+        table.add_columns(*columns)
+
+        # Populate rows
+        for choice in choices:
+            # The 'name' in choices is already a formatted string "Default | Key | val1 | val2..."
+            # We split it back to get the individual cells
+            row_data = choice["name"].split(" | ")
+            table.add_row(*row_data)
+
+    def on_data_table_row_selected(self, event) -> None:
+        # Get the key from the second column of the selected row (index 1)
+        table = self.query_one(DataTable)
+        row_key = table.get_row(event.row_key)[1].strip()
+        self.selected_key = row_key
+        self.exit(self.selected_key)
+
+    def action_select(self) -> None:
+        table = self.query_one(DataTable)
+        cursor_row = table.cursor_row
+        if cursor_row is not None:
+            # Get the key from the second column (index 1)
+            row_key = table.get_row(cursor_row)[1].strip()
+            self.selected_key = row_key
+            self.exit(self.selected_key)
+
+    def action_select_default(self) -> None:
+        """Select the default partition."""
+        if not self.default_key:
+            return
+
+        table = self.query_one(DataTable)
+        for row_key in table.rows:
+            row_data = table.get_row(row_key)
+            # Key is in the second column (index 1)
+            val = row_data[1].strip()
+            if val == self.default_key:
+                self.selected_key = self.default_key
+                self.exit(self.selected_key)
+                break
+
 @uva_group.command(name="login")
 @click.option("--sbatch", help="Sbatch parameter")
 @click.option("--host", default="uva", help="Host to use")
 @click.argument("key", required=False)
 @click.option("--debug", is_flag=True, help="Enable debug mode")
-def login_cmd(sbatch, host, key, debug):
+@click.option("--ui", is_flag=True, help="Use interactive UI to select partition")
+def login_cmd(sbatch, host, key, debug, ui):
     """Logs into an interactive node on UVA."""
     uva = Uva(host=host, debug=debug)
+    
+    if ui:
+        try:
+            # Use Textual app for partition selection
+            app = PartitionSelectorApp(host, uva)
+            selected_key = app.run()
+
+            if not selected_key:
+                click.echo("No partition selected. Exiting.")
+                return
+
+            # Construct the command that will be executed
+            cmd_parts = ["cmc uva login"]
+            if host != "uva":
+                cmd_parts.append(f"--host {host}")
+            if sbatch:
+                cmd_parts.append(f'--sbatch "{sbatch}"')
+            cmd_parts.append(selected_key)
+            full_cmd = " ".join(cmd_parts)
+
+            # Get the actual ijob command that will be run
+            sbatch_params = uva.parse_sbatch_parameter(sbatch) if sbatch else None
+            ijob_cmd = uva.get_login_command(host, selected_key, sbatch_params)
+
+            # Present the command in a banner
+            console = Console()
+            banner_content = f"# {full_cmd}\n{ijob_cmd}"
+            console.print(banner("Interactive Job", banner_content))
+
+            # Confirmation Step using questionary
+            confirmed = questionary.confirm(
+                f"Do you want to start the login process?",
+                default=True
+            ).ask()
+
+            if not confirmed:
+                click.echo("Login cancelled by user.")
+                return
+
+            key = selected_key
+
+        except KeyboardInterrupt:
+            click.echo("\nLogin cancelled by user (Ctrl+C).")
+            return
+
     sbatch_params = uva.parse_sbatch_parameter(sbatch) if sbatch else None
     uva.login(host, key, sbatch_params=sbatch_params)
 

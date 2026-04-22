@@ -18,9 +18,12 @@ class Uva:
             # Load partitions from the file relative to this module
             path = os.path.join(os.path.dirname(__file__), 'partitions.yaml')
             with open(path, 'r') as f:
-                self.directive = yaml.safe_load(f)
+                data = yaml.safe_load(f)
+                self.ai_config = data.get('cloudmesh', {}).get('ai', {})
+                self.directive = self.ai_config.get('partition', {})
         except Exception as e:
             Console.error(f"Failed to load partitions.yaml: {e}")
+            self.ai_config = {}
             self.directive = {}
 
     def parse_sbatch_parameter(self, parameters):
@@ -47,29 +50,98 @@ class Uva:
             block += f"#SBATCH --{k}={v}\n"
         return block
 
-    def login(self, host, key, sbatch_params=None):
-        """SSH on UVA by executing an interactive job command."""
-        host = host or self.host
-        
-        if not key:
-            available_keys = list(self.directive.get(host, {}).keys())
-            Console.error(f"No key provided for host {host}. Available keys: {', '.join(available_keys)}")
-            return
+    def get_partition_table_data(self, host):
+        """
+        Prepare table-like data for interactive selection.
+        Returns a tuple of (header_string, choices_list).
+        """
+        partitions = self.directive.get(host, {})
+        if not partitions:
+            return None, None
 
-        # Start with base directives from the config
+        # Filter out the 'default' key from the table rows as it's a pointer
+        display_partitions = {k: v for k, v in partitions.items() if k != 'default'}
+        if not display_partitions:
+            return None, None
+
+        # Get the default partition for this host to mark it in the table
+        default_key = self.get_default_partition(host)
+
+        # Identify all unique directive keys across all partitions
+        all_directive_keys = set()
+        for v in display_partitions.values():
+            all_directive_keys.update(v.keys())
+        sorted_keys = sorted(list(all_directive_keys))
+
+        # Calculate column widths for alignment
+        col_widths = {dk: len(dk) for dk in sorted_keys}
+        col_widths["Key"] = 10  # Default width for Key
+        col_widths["Default"] = 8
+        for k, v in display_partitions.items():
+            col_widths["Key"] = max(col_widths["Key"], len(k))
+            for dk in sorted_keys:
+                col_widths[dk] = max(col_widths[dk], len(str(v.get(dk, ""))))
+
+        # Create formatted header - add "Default" at the beginning
+        header = f"{'Default'.ljust(col_widths['Default'])} | {'Key'.ljust(col_widths['Key'])} | " + " | ".join([dk.ljust(col_widths[dk]) for dk in sorted_keys])
+
+        # Create formatted rows as choices
+        choices = []
+        for k, v in display_partitions.items():
+            is_default = "*" if k == default_key else " "
+            row_str = f"{is_default.ljust(col_widths['Default'])} | {k.ljust(col_widths['Key'])} | " + " | ".join([str(v.get(dk, "")).ljust(col_widths[dk]) for dk in sorted_keys])
+            choices.append({"name": row_str, "value": k})
+
+        return header, choices
+
+    def get_default_partition(self, host):
+        """Return the default partition for the host if it exists."""
+        # 1. Check for host-specific default
+        host_partitions = self.directive.get(host, {})
+        if "default" in host_partitions:
+            # Return the actual partition name pointed to by 'default'
+            return host_partitions["default"].get("partition")
+
+        # 2. Check for global default (handling the 'dafault' typo in YAML)
+        global_default = self.ai_config.get('dafault', {}).get('partition')
+        if global_default:
+            # Return only the short key (e.g., 'a100-dgx' from 'cloudmesh.ai.partition.uva.a100-dgx')
+            return global_default.split('.')[-1]
+
+        # 3. Fallback to the first available partition for the host
+        if host_partitions:
+            # Filter out 'default' key if it exists
+            keys = [k for k in host_partitions.keys() if k != 'default']
+            return next(iter(keys)) if keys else None
+            
+        return None
+
+    def get_login_command(self, host, key, sbatch_params=None):
+        """Construct the SSH ijob command without executing it."""
+        host = host or self.host
+        if not key:
+            key = "default"
+
         try:
             directives = self.directive[host][key].copy()
         except KeyError:
-            available_keys = list(self.directive.get(host, {}).keys())
-            Console.error(f"Key {key} not found for host {host}. Available keys: {', '.join(available_keys)}")
-            return
+            return None
 
-        # Override with sbatch parameters if provided
         if sbatch_params:
             directives.update(sbatch_params)
 
         parameters = "".join([f" --{k}={v}" for k, v in directives.items()])
-        command = f'ssh -tt {host} "/opt/rci/bin/ijob{parameters}"'
+        return f'ssh -tt {host} "/opt/rci/bin/ijob{parameters}"'
+
+    def login(self, host, key, sbatch_params=None):
+        """SSH on UVA by executing an interactive job command."""
+        command = self.get_login_command(host, key, sbatch_params)
+        if not command:
+            # Handle the error case as before
+            host = host or self.host
+            available_keys = list(self.directive.get(host, {}).keys())
+            Console.error(f"Key {key} not found for host {host}. Available keys: {', '.join(available_keys)}")
+            return
 
         Console.msg(command)
         if not self.debug:
