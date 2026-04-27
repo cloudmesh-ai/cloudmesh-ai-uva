@@ -25,4 +25,4 @@ uva = "command.uva:register"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["command*"]
+include = ["cloudmesh*"]

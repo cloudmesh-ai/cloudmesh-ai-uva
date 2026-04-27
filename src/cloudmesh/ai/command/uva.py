@@ -4,9 +4,7 @@ import csv
 import os
 import re
 import questionary
-from rich.console import Console
-from rich.table import Table
-from cloudmesh.ai.common import banner
+from cloudmesh.ai.common.io import console
 from textual.app import App, ComposeResult
 from textual.widgets import DataTable, Footer
 from cloudmesh.ai.uva import Uva
@@ -33,7 +31,7 @@ def storage_info(directory, info, debug):
     """Obtains information about the storage associated with a directory on UVA."""
     uva = Uva(debug=debug)
     result = uva.storage(directory)
-    click.echo(result)
+    console.print(result)
 
 # --- VPN Group ---
 @uva_group.group(name="vpn")
@@ -44,22 +42,22 @@ def vpn_group():
 @vpn_group.command(name="on")
 def vpn_on():
     """Switches the VPN on."""
-    click.echo("Connecting to VPN... Not implemented")
+    console.warning("Connecting to VPN... Not implemented")
 
 @vpn_group.command(name="off")
 def vpn_off():
     """Switches the VPN off."""
-    click.echo("Disconnecting from VPN... Not implemented")
+    console.warning("Disconnecting from VPN... Not implemented")
 
 @vpn_group.command(name="info")
 def vpn_info():
     """Prints information about the current connection to the internet."""
-    click.echo("VPN Info: Not implemented")
+    console.warning("VPN Info: Not implemented")
 
 @vpn_group.command(name="status")
 def vpn_status():
     """Prints True if VPN is enabled, False if not."""
-    click.echo("VPN Status: False (Not implemented)")
+    console.warning("VPN Status: False (Not implemented)")
 
 # --- Slurm Group ---
 @uva_group.group(name="slurm")
@@ -74,7 +72,7 @@ def slurm_info(host, key):
     """Prints Slurm directive information."""
     uva = Uva()
     directives = uva.create_slurm_directives(host, key)
-    click.echo(directives)
+    console.print(directives)
 
 @slurm_group.command(name="run")
 @click.option("--sbatch", help="Sbatch parameter")
@@ -218,7 +216,7 @@ def login_cmd(sbatch, host, key, debug, ui):
             selected_key = app.run()
 
             if not selected_key:
-                click.echo("No partition selected. Exiting.")
+                console.warning("No partition selected. Exiting.")
                 return
 
             # Construct the command that will be executed
@@ -235,9 +233,8 @@ def login_cmd(sbatch, host, key, debug, ui):
             ijob_cmd = uva.get_login_command(host, selected_key, sbatch_params)
 
             # Present the command in a banner
-            console = Console()
             banner_content = f"# {full_cmd}\n{ijob_cmd}"
-            console.print(banner("Interactive Job", banner_content))
+            console.banner("Interactive Job", banner_content)
 
             # Confirmation Step using questionary
             confirmed = questionary.confirm(
@@ -246,13 +243,13 @@ def login_cmd(sbatch, host, key, debug, ui):
             ).ask()
 
             if not confirmed:
-                click.echo("Login cancelled by user.")
+                console.msg("Login cancelled by user.")
                 return
 
             key = selected_key
 
         except KeyboardInterrupt:
-            click.echo("\nLogin cancelled by user (Ctrl+C).")
+            console.msg("\nLogin cancelled by user (Ctrl+C).")
             return
 
     sbatch_params = uva.parse_sbatch_parameter(sbatch) if sbatch else None
@@ -272,14 +269,14 @@ def tutorial_cmd(keyword):
         "system": "https://infomall.org/uva/docs/tutorial/rivanna/",
     }
     url = urls.get(keyword, "https://infomall.org/uva/docs/tutorial/")
-    click.echo(f"Opening tutorial for {keyword or 'general'}: {url}")
+    console.msg(f"Opening tutorial for {keyword or 'general'}: {url}")
     webbrowser.open(url)
 
 @uva_group.command(name="ticket")
 def ticket_cmd():
     """Opens the support request form."""
     url = "https://www.rc.virginia.edu/form/support-request/"
-    click.echo(f"Opening support ticket form: {url}")
+    console.msg(f"Opening support ticket form: {url}")
     webbrowser.open(url)
 
 @uva_group.command(name="jupyter")
@@ -306,7 +303,7 @@ def config_cmd():
     config_path = os.path.join(os.path.dirname(__file__), '..', 'config.csv')
     
     if not os.path.exists(config_path):
-        click.echo(f"Configuration file not found: {config_path}")
+        console.error(f"Configuration file not found: {config_path}")
         return
 
     with open(config_path, 'r', encoding='utf-8') as f:
@@ -322,51 +319,8 @@ def config_cmd():
             sections[current_section].append(line)
 
     def print_table(title, header, data, link):
-        console = Console()
-        table = Table(title=title)
-        
-        # Process data for decimal alignment
-        formatted_data = [row[:] for row in data]
-        
-        for i in range(len(header)):
-            # Check if this column is numeric
-            is_numeric = False
-            if data and i < len(data[0]) and data[0][i]:
-                if data[0][i][0].isdigit() or data[0][i].startswith('-'):
-                    is_numeric = True
-            
-            if is_numeric:
-                # Check if it's a float column and find max precision
-                max_precision = -1
-                for row in data:
-                    if i < len(row) and row[i]:
-                        try:
-                            val = float(row[i])
-                            if '.' in row[i]:
-                                precision = len(row[i].split('.')[1])
-                                max_precision = max(max_precision, precision)
-                        except ValueError:
-                            pass
-                
-                # Format float values to max_precision
-                if max_precision != -1:
-                    for row in formatted_data:
-                        if i < len(row) and row[i]:
-                            try:
-                                val = float(row[i])
-                                row[i] = f"{val:.{max_precision}f}"
-                            except ValueError:
-                                pass
-
-            # Set alignment
-            justify = "right" if is_numeric else "left"
-            no_wrap = is_numeric
-            table.add_column(header[i], justify=justify, no_wrap=no_wrap)
-        
-        for row in formatted_data:
-            table.add_row(*row)
-        
-        console.print(table)
+        # Use the simplified console.table for the main display
+        console.table(header, data, title=title)
         console.print(f"[link={link}]Source: {link}[/link]\n")
 
     if "Hardware" in sections:
@@ -381,6 +335,7 @@ def config_cmd():
                     h = "Specialty\nHardware"
                 header.append(h)
             data = [line.split(',') for line in hw_lines[1:]]
+            console.banner("UVA Hardware Configuration", "Detailed hardware specifications for the UVA cluster.")
             print_table("Hardware Configuration", header, data, "https://www.rc.virginia.edu/userinfo/hpc/#hardware-configuration")
 
     if "Queues" in sections:
@@ -388,12 +343,13 @@ def config_cmd():
         if q_lines:
             header = [re.sub(r'\s*/\s*', '\n/', h) for h in q_lines[0].split(',')]
             data = [line.split(',') for line in q_lines[1:]]
+            console.banner("UVA Queue Configuration", "Available Slurm queues and their constraints.")
             print_table("Queues", header, data, "https://www.rc.virginia.edu/userinfo/hpc/#job-queues")
 
 @uva_group.command(name="info")
 def info_cmd():
     """Print hello world."""
-    click.echo("hello world")
+    console.print("hello world")
 
 def register(cli):
     cli.add_command(uva_group, name="uva")

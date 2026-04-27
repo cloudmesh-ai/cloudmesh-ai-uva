@@ -96,8 +96,12 @@ class Uva:
 
     def get_default_partition(self, host):
         """Return the default partition for the host if it exists."""
-        # 1. Check for host-specific default
+        if host not in self.directive:
+            return None
+
         host_partitions = self.directive.get(host, {})
+        
+        # 1. Check for host-specific default
         if "default" in host_partitions:
             # Return the actual partition name pointed to by 'default'
             return host_partitions["default"].get("partition")
@@ -109,12 +113,9 @@ class Uva:
             return global_default.split('.')[-1]
 
         # 3. Fallback to the first available partition for the host
-        if host_partitions:
-            # Filter out 'default' key if it exists
-            keys = [k for k in host_partitions.keys() if k != 'default']
-            return next(iter(keys)) if keys else None
-            
-        return None
+        # Filter out 'default' key if it exists
+        keys = [k for k in host_partitions.keys() if k != 'default']
+        return next(iter(keys)) if keys else None
 
     def get_login_command(self, host, key, sbatch_params=None):
         """Construct the SSH ijob command without executing it."""
