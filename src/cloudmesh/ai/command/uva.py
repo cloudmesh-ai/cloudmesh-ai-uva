@@ -5,6 +5,7 @@ import os
 import re
 import questionary
 from cloudmesh.ai.common.io import console
+from cloudmesh.ai.vpn.vpn import Vpn
 from textual.app import App, ComposeResult
 from textual.widgets import DataTable, Footer
 from cloudmesh.ai.uva import Uva
@@ -42,22 +43,27 @@ def vpn_group():
 @vpn_group.command(name="on")
 def vpn_on():
     """Switches the VPN on."""
-    console.warning("Connecting to VPN... Not implemented")
+    vpn = Vpn(service="uva")
+    vpn.connect()
 
 @vpn_group.command(name="off")
 def vpn_off():
     """Switches the VPN off."""
-    console.warning("Disconnecting from VPN... Not implemented")
+    vpn = Vpn(service="uva")
+    vpn.disconnect()
 
 @vpn_group.command(name="info")
 def vpn_info():
     """Prints information about the current connection to the internet."""
-    console.warning("VPN Info: Not implemented")
+    vpn = Vpn(service="uva")
+    vpn.info()
 
 @vpn_group.command(name="status")
 def vpn_status():
     """Prints True if VPN is enabled, False if not."""
-    console.warning("VPN Status: False (Not implemented)")
+    vpn = Vpn(service="uva")
+    enabled = vpn.enabled()
+    console.print(f"VPN Enabled: {enabled}")
 
 # --- Slurm Group ---
 @uva_group.group(name="slurm")

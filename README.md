@@ -4,11 +4,12 @@ Cloudmesh AI UVA is a tool designed to simplify access and management of resourc
 
 ## Features
 
-- **Interactive Login**: Simplified interactive job submission using `ijob`.
+- **Interactive Login**: Simplified interactive job submission using `ijob`, including an interactive UI for partition selection.
 - **Slurm Management**: Easy access to Slurm directives and job cancellation.
 - **Image Building**: Build Apptainer images directly on the cluster.
 - **Storage Monitoring**: Quickly check directory sizes on the remote host.
 - **Remote Editing**: Edit files on the cluster using your preferred editor.
+- **VPN Management**: Integrated VPN control for secure cluster access.
 - **Quick Links**: Access to UVA tutorials and support tickets.
 - **Jupyter Integration**: Quick setup for Jupyter notebooks.
 
@@ -27,6 +28,7 @@ All commands are accessed via the `cmc uva` group.
 ### General Information
 ```bash
 cmc uva info
+cmc uva config
 ```
 
 ### Login and Interactive Sessions
@@ -35,6 +37,9 @@ Log into an interactive node. You can specify a host and a configuration key (e.
 ```bash
 # Basic login
 cmc uva login <key>
+
+# Interactive UI to browse and select from all available partition keys
+cmc uva login --ui
 
 # Login with specific host and sbatch parameters
 cmc uva login <key> --host <host> --sbatch "nodes:1,time:01:00:00"
@@ -72,6 +77,23 @@ Check storage usage for a specific directory.
 cmc uva storage info <directory>
 ```
 
+### VPN Management
+Manage your VPN connection to UVA.
+
+```bash
+# Connect to VPN
+cmc uva vpn on
+
+# Disconnect from VPN
+cmc uva vpn off
+
+# Show current IP and connection info
+cmc uva vpn info
+
+# Check if VPN is enabled
+cmc uva vpn status
+```
+
 ### Remote Editing
 Edit a file on the remote host using a specified editor (defaults to `emacs`).
 
@@ -96,13 +118,6 @@ cmc uva tutorial [keyword]
 # Open the support request form
 cmc uva ticket
 ```
-
-### VPN (Planned)
-Commands for VPN management are currently under development:
-- `cmc uva vpn on`
-- `cmc uva vpn off`
-- `cmc uva vpn info`
-- `cmc uva vpn status`
 
 ## Configuration
 
