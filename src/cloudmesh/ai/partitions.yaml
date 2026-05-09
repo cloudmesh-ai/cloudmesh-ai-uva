@@ -69,11 +69,6 @@ cloudmesh:
         l4:
           gres: "gpu:1"
           partition: "hpg-turin"   
-      greene:
-        v100:
-          gres: "gpu:v100:1"
-        a100:
-          gres: "gpu:a100:1"
       maltlab:
         rtx_titan:
           gres: "gpu:rtx_titan:1"

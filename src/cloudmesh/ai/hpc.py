@@ -5,13 +5,13 @@ from cloudmesh.ai.common.logging_utils import get_contextual_logger
 from cloudmesh.ai.common.stopwatch import StopWatch
 from cloudmesh.ai.common.Shell import Shell
 
-logger = get_contextual_logger("uva")
+logger = get_contextual_logger("hpc")
 
 
-class Uva:
-    def __init__(self, host="uva", debug=False):
+class Hpc:
+    def __init__(self, host="hpc", debug=False):
         """
-        Initialize the Uva class.
+        Initialize the Hpc class.
         """
         self.debug = debug
         self.host = host
@@ -146,7 +146,7 @@ class Uva:
         return f'ssh -tt {host} "/opt/rci/bin/ijob{parameters}"'
 
     def login(self, host, key, sbatch_params=None):
-        """SSH on UVA by executing an interactive job command."""
+        """SSH on HPC by executing an interactive job command."""
         command = self.get_login_command(host, key, sbatch_params)
         if not command:
             # Handle the error case as before
@@ -163,10 +163,10 @@ class Uva:
         return ""
 
     def create_apptainer_image(self, name):
-        """Create an apptainer image on UVA."""
+        """Create an apptainer image on HPC."""
         try:
             cache = os.environ.get("APPTAINER_CACHEDIR", "/scratch/$USER/.apptainer/")
-            console.banner("Cloudmesh UVA Apptainer Build")
+            console.banner("Cloudmesh HPC Apptainer Build")
 
             image = os.path.basename(name.replace(".def", ".sif"))
             logger.debug(f"Building image {image} from {name}")
@@ -191,11 +191,11 @@ class Uva:
             console.error(e)
 
     def jupyter(self, port=8000):
-        """Start a Jupyter notebook on UVA."""
+        """Start a Jupyter notebook on HPC."""
         console.print(f"Starting Jupyter on port {port}...")
         console.print("Note: This requires an active VPN connection.")
         console.print(f"Command: jupyter notebook --no-browser --port={port}")
-        console.print(f"Tunnel: ssh -L 8080:localhost:{port} uva")
+        console.print(f"Tunnel: ssh -L 8080:localhost:{port} hpc")
 
     def cancel(self, job_id):
         """Cancel a Slurm job."""

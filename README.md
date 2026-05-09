@@ -1,6 +1,6 @@
-# Cloudmesh AI UVA
+# Cloudmesh AI HPC
 
-Cloudmesh AI UVA is a tool designed to simplify access and management of resources on the University of Virginia (UVA) computing clusters, including Rivanna. It provides a streamlined CLI to handle Slurm jobs, Apptainer images, storage checks, and remote file editing.
+Cloudmesh AI HPC is a tool designed to simplify access and management of resources on High Performance Computing (HPC) clusters, including those at the University of Virginia (UVA) such as Rivanna. It provides a streamlined CLI to handle Slurm jobs, Apptainer images, storage checks, and remote file editing.
 
 ## Features
 
@@ -121,7 +121,7 @@ cmc uva ticket
 
 ## Configuration
 
-The tool uses a built-in directive map to handle Slurm configurations for various hosts (e.g., `rivanna`, `hipergator`, `greene`). These directives include:
+The tool uses a built-in directive map to handle Slurm configurations for various hosts (e.g., `rivanna`, `hipergator`). These directives include:
 - `partition`
 - `account`
 - `gres` (GPU requests)
@@ -136,3 +136,7 @@ Most commands support a `--debug` flag. When enabled, the tool will print the ex
 Example:
 ```bash
 cmc uva slurm cancel 12345 --debug
+## Core Dependencies
+This project depends on the following core components of the Cloudmesh AI ecosystem:
+- [cloudmesh-ai-common](https://github.com/cloudmesh-ai/cloudmesh-ai-common)
+- [cloudmesh-ai-cmc](https://github.com/cloudmesh-ai/cloudmesh-ai-cmc)

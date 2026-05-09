@@ -3,11 +3,20 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "cloudmesh-ai-uva"
+name = "cloudmesh-ai-hpc"
 
 dynamic = ["version"]
-description = "Extension uva created by CME"
-license = {text = "Apache-2.0"}
+description = "Extension hpc created by CME"
+license = "Apache-2.0"
+urls = { "Homepage" = "https://github.com/cloudmesh-ai/cloudmesh-ai-hpc" }
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: System Administrators",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+]
 dependencies = [
     "cloudmesh-ai-cmc",
     "click",
@@ -21,7 +30,7 @@ dependencies = [
 version = {file = "VERSION"}
 
 [project.entry-points."cloudmesh.ai.command"]
-uva = "command.uva:register"
+hpc = "command.hpc:register"
 
 [tool.setuptools.packages.find]
 where = ["src"]
