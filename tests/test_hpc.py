@@ -127,5 +127,60 @@ class TestHpc(unittest.TestCase):
         # Verify base partitions still exist
         self.assertIn("a100-dgx", hpc.directive["uva"])
 
+    def test_parse_sbatch_aliases(self):
+        hpc = Hpc()
+        hpc.ai_config["aliases"] = {"gpu-heavy": "nodes:2,gres:gpu:a100:2"}
+        params = "gpu-heavy,time:24:00:00"
+        expected = {"nodes": "2", "gres:gpu:a100": "2", "time": "24:00:00"}
+        self.assertEqual(hpc.parse_sbatch_parameter(params), expected)
+
+    def test_submit_job(self):
+        hpc = Hpc(host="uva")
+        with patch("builtins.open", unittest.mock.mock_open(read_data="echo hello")):
+            result = hpc.submit("script.sh", key="a100-dgx")
+            self.mock_shell.assert_any_call(unittest.mock.ANY) # Upload
+            self.mock_shell.assert_called_with("ssh uva 'sbatch /tmp/job_script.sh'")
+
+    def test_logs_command(self):
+        hpc = Hpc(host="uva")
+        hpc.logs("12345", tail=False)
+        self.mock_shell.assert_called_with("ssh uva 'cat slurm-12345.out'")
+        
+        hpc.logs("12345", tail=True)
+        self.mock_shell.assert_called_with("ssh uva 'tail -f slurm-12345.out'")
+
+    def test_job_info_command(self):
+        hpc = Hpc(host="uva")
+        hpc.job_info("12345")
+        self.mock_shell.assert_called_with("ssh uva 'scontrol show job 12345'")
+
+    def test_quota_command(self):
+        hpc = Hpc(host="uva")
+        hpc.quota()
+        self.mock_shell.assert_called_with("ssh uva 'quota -s'")
+
+    def test_nodes_command(self):
+        hpc = Hpc(host="uva")
+        hpc.nodes()
+        self.mock_shell.assert_called_with("ssh uva 'sinfo'")
+        
+        hpc.nodes(partition="gpu")
+        self.mock_shell.assert_called_with("ssh uva 'sinfo -p gpu'")
+
+    def test_wait_job(self):
+        hpc = Hpc(host="uva")
+        # Mock get_job_status to return 'R' then 'COMPLETED'
+        hpc.get_job_status = unittest.mock.MagicMock(side_effect=["R", "COMPLETED"])
+        with patch("time.sleep"): # Don't actually sleep
+            result = hpc.wait("12345", interval=1)
+            self.assertTrue(result)
+
+    def test_template_generation(self):
+        hpc = Hpc(host="uva")
+        template = hpc.template(key="a100-dgx")
+        self.assertIn("#SBATCH --partition=a100", template)
+        self.assertIn("#SBATCH --account=ai", template)
+        self.assertIn("#!/bin/bash", template)
+
 if __name__ == "__main__":
     unittest.main()

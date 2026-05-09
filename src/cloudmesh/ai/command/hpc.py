@@ -73,13 +73,77 @@ def slurm_group():
     pass
 
 @slurm_group.command(name="info")
-@click.option("--host", default="hpc", help="Host to use")
-@click.argument("key")
-def slurm_info(host: str, key: str) -> None:
-    """Prints Slurm directive information."""
+@click.argument("key", required=False)
+def slurm_info(key: Optional[str]) -> None:
+    """Prints Slurm directive information for a partition key."""
     hpc = Hpc()
-    directives = hpc.create_slurm_directives(host, key)
+    if not key:
+        console.error("Please provide a partition key.")
+        return
+    directives = hpc.create_slurm_directives(hpc.host, key)
     console.print(directives)
+
+@slurm_group.command(name="job-info")
+@click.argument("job_id")
+def slurm_job_info(job_id: str) -> None:
+    """Get detailed information about a Slurm job."""
+    hpc = Hpc()
+    result = hpc.job_info(job_id)
+    console.print(result)
+
+@slurm_group.command(name="submit")
+@click.argument("script")
+@click.option("--key", help="Partition key")
+@click.option("--sbatch", help="Additional sbatch parameters (key:val,key:val)")
+def slurm_submit(script: str, key: Optional[str], sbatch: Optional[str]) -> None:
+    """Upload a script and submit it as a Slurm job."""
+    hpc = Hpc()
+    try:
+        sbatch_params = hpc.parse_sbatch_parameter(sbatch) if sbatch else None
+        result = hpc.submit(script, key=key, sbatch_params=sbatch_params)
+        console.print(result)
+    except Exception as e:
+        console.error(e)
+
+@slurm_group.command(name="logs")
+@click.argument("job_id")
+@click.option("--tail", is_flag=True, help="Tail the log file")
+def slurm_logs(job_id: str, tail: bool) -> None:
+    """Read the Slurm output logs for a job."""
+    hpc = Hpc()
+    result = hpc.logs(job_id, tail=tail)
+    console.print(result)
+
+@slurm_group.command(name="quota")
+def slurm_quota() -> None:
+    """Check disk quota on the HPC."""
+    hpc = Hpc()
+    result = hpc.quota()
+    console.print(result)
+
+@slurm_group.command(name="nodes")
+@click.option("--partition", help="Partition to check")
+def slurm_nodes(partition: Optional[str]) -> None:
+    """Check node status for a partition."""
+    hpc = Hpc()
+    result = hpc.nodes(partition=partition)
+    console.print(result)
+
+@slurm_group.command(name="wait")
+@click.argument("job_id")
+@click.option("--interval", default=30, help="Polling interval in seconds")
+def slurm_wait(job_id: str, interval: int) -> None:
+    """Wait for a Slurm job to complete."""
+    hpc = Hpc()
+    hpc.wait(job_id, interval=interval)
+
+@slurm_group.command(name="template")
+@click.option("--key", help="Partition key for the template")
+def slurm_template(key: Optional[str]) -> None:
+    """Generate a boilerplate .sbatch script."""
+    hpc = Hpc()
+    result = hpc.template(key=key)
+    console.print(result)
 
 @slurm_group.command(name="run")
 @click.option("--sbatch", help="Sbatch parameter")

@@ -57,19 +57,31 @@ class Hpc:
         """
         Parse the parameters string and convert it to a dictionary.
         Expected format: "key1:val1,key2:val2"
+        Supports aliases defined in local config.
         Raises ValueError if the format is invalid.
         """
         result = {}
         if not parameters:
             return result
 
+        # Handle aliases from local config
+        aliases = self.ai_config.get("aliases", {})
+        
         data = parameters.split(",")
         for line in data:
             line = line.strip()
             if not line:
                 continue
+            
+            # Check if the line is an alias
+            if line in aliases:
+                alias_val = aliases[line]
+                # Recursively parse the alias value
+                result.update(self.parse_sbatch_parameter(alias_val))
+                continue
+
             if ":" not in line:
-                raise ValueError(f"Invalid sbatch parameter format: '{line}'. Expected 'key:value'.")
+                raise ValueError(f"Invalid sbatch parameter format: '{line}'. Expected 'key:value' or a defined alias.")
             
             key, value = line.split(":", 1)
             key = key.strip()
@@ -341,3 +353,115 @@ class Hpc:
             console.msg(f"Default host set to {host}" + (f" and partition to {partition}" if partition else ""))
         except Exception as e:
             console.error(f"Failed to save local config: {e}")
+
+    def submit(self, script_path: str, key: Optional[str] = None, sbatch_params: Optional[Dict[str, str]] = None) -> str:
+        """Upload a script and submit it as a Slurm job."""
+        host = self.host
+        key = key or self.get_default_partition(host)
+        if not key:
+            raise ValueError(f"No partition key provided and no default found for host {host}")
+
+        # 1. Generate directives
+        directives = self.create_slurm_directives(host, key)
+        if sbatch_params:
+            for k, v in sbatch_params.items():
+                directives += f"#SBATCH --{k}={v}\n"
+
+        # 2. Read script and prepend directives
+        with open(script_path, "r") as f:
+            script_content = f.read()
+        
+        full_script = directives + script_content
+        remote_script = f"/tmp/job_{os.path.basename(script_path)}"
+        
+        # 3. Upload script
+        # Using a simple ssh command to write the file to avoid scp dependency issues
+        import base64
+        encoded_content = base64.b64encode(full_script.encode()).decode()
+        upload_cmd = f"ssh {host} 'echo {encoded_content} | base64 -d > {remote_script}'"
+        
+        if not self.debug:
+            Shell.run(upload_cmd)
+        else:
+            console.msg(f"Debug: {upload_cmd}")
+
+        # 4. Submit job
+        submit_cmd = f"ssh {host} 'sbatch {remote_script}'"
+        if not self.debug:
+            result = Shell.run(submit_cmd)
+            return result
+        else:
+            console.msg(f"Debug: {submit_cmd}")
+            return "Submitted (debug)"
+
+    def logs(self, job_id: str, tail: bool = False) -> str:
+        """Read the Slurm output logs for a job."""
+        # Slurm logs are typically slurm-<jobid>.out in the submission directory
+        # We assume the user is in the correct directory or the log is in home
+        cmd = f"ssh {self.host} 'tail -f slurm-{job_id}.out'" if tail else f"ssh {self.host} 'cat slurm-{job_id}.out'"
+        
+        if not self.debug:
+            return Shell.run(cmd)
+        else:
+            console.msg(f"Debug: {cmd}")
+            return "Log output (debug)"
+
+    def job_info(self, job_id: str) -> str:
+        """Get detailed information about a Slurm job."""
+        cmd = f"ssh {self.host} 'scontrol show job {job_id}'"
+        if not self.debug:
+            return Shell.run(cmd)
+        else:
+            console.msg(f"Debug: {cmd}")
+            return "Job info (debug)"
+
+    def quota(self) -> str:
+        """Check disk quota on the HPC."""
+        cmd = f"ssh {self.host} 'quota -s'"
+        if not self.debug:
+            return Shell.run(cmd)
+        else:
+            console.msg(f"Debug: {cmd}")
+            return "Quota info (debug)"
+
+    def nodes(self, partition: Optional[str] = None) -> str:
+        """Check node status for a partition."""
+        host = self.host
+        cmd = f"ssh {host} 'sinfo'"
+        if partition:
+            cmd = f"ssh {host} 'sinfo -p {partition}'"
+        
+        if not self.debug:
+            return Shell.run(cmd)
+        else:
+            console.msg(f"Debug: {cmd}")
+            return "Node info (debug)"
+
+    def wait(self, job_id: str, interval: int = 30) -> bool:
+        """Wait for a Slurm job to complete."""
+        import time
+        console.msg(f"Waiting for job {job_id} to complete...")
+        while True:
+            status = self.get_job_status(job_id)
+            if not status or "R" not in status and "PD" not in status:
+                console.msg(f"Job {job_id} has finished.")
+                return True
+            time.sleep(interval)
+
+    def template(self, key: Optional[str] = None) -> str:
+        """Generate a boilerplate .sbatch script."""
+        key = key or self.get_default_partition(self.host)
+        if not key:
+            return "# No default partition found. Please specify a key."
+        
+        directives = self.create_slurm_directives(self.host, key)
+        template = (
+            f"{directives}"
+            f"#SBATCH --output=slurm-%j.out\n"
+            f"#SBATCH --error=slurm-%j.err\n\n"
+            f"#!/bin/bash\n"
+            f"# Your commands here\n"
+            f"echo 'Hello from Slurm job on {self.host} partition {key}'\n"
+            f"hostname\n"
+        )
+        return template

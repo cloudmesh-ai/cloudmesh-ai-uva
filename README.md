@@ -5,10 +5,10 @@ Cloudmesh AI HPC is a tool designed to simplify access and management of resourc
 ## Features
 
 - **Interactive Login**: Simplified interactive job submission using `ijob`, including an interactive UI for partition selection.
-- **Slurm Management**: Full lifecycle management of Slurm jobs, including status monitoring, listing active jobs, and cancellation.
-- **Local Configuration**: Persist your preferred host and partition defaults locally.
+- **Slurm Lifecycle Management**: Full management of Slurm jobs, from template generation and submission to monitoring, log tailing, and cancellation.
+- **Local Configuration**: Persist your preferred host, partition defaults, and sbatch aliases locally.
 - **Image Building**: Build Apptainer images directly on the cluster.
-- **Storage Monitoring**: Quickly check directory sizes on the remote host.
+- **Storage Monitoring**: Quickly check directory sizes and disk quotas on the remote host.
 - **Remote Editing**: Edit files on the cluster using your preferred editor.
 - **VPN Management**: Integrated VPN control for secure cluster access.
 - **Quick Links**: Access to UVA tutorials and support tickets.
@@ -50,30 +50,54 @@ cmc hpc login --ui
 cmc hpc login <key> --host <host> --sbatch "nodes:1,time:01:00:00"
 ```
 
-### Slurm Commands
-Manage Slurm directives and jobs.
+### Slurm Job Management
+Manage the full lifecycle of your Slurm jobs.
 
-**View Directives:**
+**Job Submission:**
 ```bash
-cmc hpc slurm info <key> [--host <host>]
+# Generate a boilerplate .sbatch script for a partition
+cmc hpc slurm template <key> > my_job.sh
+
+# Upload and submit a script
+cmc hpc slurm submit my_job.sh [--key <key>] [--sbatch "nodes:2"]
 ```
 
-**Run a Job (Interactive):**
+**Monitoring & Info:**
 ```bash
-cmc hpc slurm run <key> [--sbatch "param:value,param2:value2"] [--host <host>]
-```
+# Get detailed information about a specific job
+cmc hpc slurm job-info <job_id>
 
-**Monitor Jobs:**
-```bash
 # Get status of a specific job
 cmc hpc slurm status <job_id>
 
 # List all active jobs for the current user
 cmc hpc slurm list
+
+# Wait for a job to complete (blocks until finished)
+cmc hpc slurm wait <job_id> [--interval 30]
 ```
 
-**Cancel a Job:**
+**Logs & Resources:**
 ```bash
+# Read the output log of a job
+cmc hpc slurm logs <job_id>
+
+# Tail the output log in real-time
+cmc hpc slurm logs <job_id> --tail
+
+# Check disk quota on the HPC
+cmc hpc slurm quota
+
+# Check node status for a partition
+cmc hpc slurm nodes [--partition <partition>]
+```
+
+**Directives & Cancellation:**
+```bash
+# View Slurm directives for a partition key
+cmc hpc slurm info <key> [--host <host>]
+
+# Cancel a Slurm job
 cmc hpc slurm cancel <job_id>
 ```
 
@@ -85,7 +109,16 @@ You can set your preferred default host and partition so you don't have to speci
 cmc hpc set-default --host uva --partition a100
 ```
 
-These settings are stored in `~/.cloudmesh/hpc.yaml`. You can also manually edit this file to add custom partitions.
+These settings are stored in `~/.cloudmesh/hpc.yaml`. 
+
+**Sbatch Aliases**: You can define aliases for common parameter sets in your `hpc.yaml` to avoid typing long strings:
+```yaml
+cloudmesh:
+  ai:
+    aliases:
+      gpu-heavy: "nodes:2,gres:gpu:a100:2,time:24:00:00"
+```
+Then use it in any command: `cmc hpc login a100 --sbatch "gpu-heavy,time:12:00:00"`
 
 ### Image Management
 Build Apptainer images from a definition file.
