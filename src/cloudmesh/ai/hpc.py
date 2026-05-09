@@ -66,6 +66,12 @@ class Hpc:
         Supports aliases defined in local config.
         Raises ValueError if the format is invalid.
         """
+        # Common valid Slurm parameters for basic validation
+        valid_params = {
+            "nodes", "ntasks", "cpus-per-task", "time", "partition", 
+            "mem", "gres", "job-name", "output", "error", "mail-type", "mail-user"
+        }
+        
         result = {}
         if not parameters:
             return result
@@ -95,6 +101,9 @@ class Hpc:
             
             if not key or not value:
                 raise ValueError(f"Invalid sbatch parameter: '{line}'. Both key and value must be provided.")
+            
+            if key not in valid_params:
+                console.warn(f"Unknown sbatch parameter: '{key}'. It may be ignored by Slurm.")
             
             result[key] = value
         return result
@@ -229,15 +238,30 @@ class Hpc:
         parameters = "".join([f" --{k}={v}" for k, v in directives.items()])
         return f'ssh -tt {host} "/opt/rci/bin/ijob{parameters}"'
 
+    def run_command(self, command: str, host: Optional[str] = None) -> str:
+        """Execute an arbitrary command on the HPC."""
+        target_host = host or self.host
+        full_command = f"ssh {target_host} '{command}'"
+        
+        if self.debug:
+            console.msg(f"Debug: {full_command}")
+        
+        try:
+            result = Shell.run(full_command)
+            return result
+        except Exception as e:
+            console.error(f"Failed to execute command on {target_host}: {e}")
+            return ""
+
     def login(self, host: Optional[str], key: Optional[str], sbatch_params: Optional[Dict[str, str]] = None) -> str:
         """SSH on HPC by executing an interactive job command."""
         command = self.get_login_command(host, key, sbatch_params)
         if not command:
             # Handle the error case as before
-            host = host or self.host
-            available_keys = list(self.directive.get(host, {}).keys())
+            target_host = host or self.host
+            available_keys = list(self.directive.get(target_host, {}).keys())
             suggestion = self._suggest_match(key, available_keys) if key else None
-            msg = f"Key {key} not found for host {host}. Available keys: {', '.join(available_keys)}"
+            msg = f"Key {key} not found for host {target_host}. Available keys: {', '.join(available_keys)}"
             if suggestion:
                 msg += f"\nDid you mean '{suggestion}'?"
             console.error(msg)
@@ -245,7 +269,10 @@ class Hpc:
 
         console.msg(command)
         if not self.debug:
-            Shell.run(command)
+            try:
+                Shell.run(command)
+            except Exception as e:
+                console.error(f"Login failed: {e}")
         return ""
 
     def create_apptainer_image(self, name: str) -> None:
@@ -288,7 +315,10 @@ class Hpc:
         command = f"ssh {self.host} 'scancel {job_id}'"
         console.msg(f"Canceling job {job_id}...")
         if not self.debug:
-            Shell.run(command)
+            try:
+                Shell.run(command)
+            except Exception as e:
+                console.error(f"Failed to cancel job {job_id}: {e}")
         return ""
 
     def get_job_status(self, job_id: str) -> str:
@@ -297,7 +327,11 @@ class Hpc:
         if self.debug:
             console.msg(f"Debug: {command}")
             return f"Job {job_id} status: Not executed (debug)"
-        return Shell.run(command)
+        try:
+            return Shell.run(command)
+        except Exception as e:
+            console.error(f"Failed to get status for job {job_id}: {e}")
+            return ""
 
     def list_jobs(self) -> str:
         """List all active Slurm jobs for the current user."""
@@ -305,7 +339,11 @@ class Hpc:
         if self.debug:
             console.msg(f"Debug: {command}")
             return "Active jobs: Not executed (debug)"
-        return Shell.run(command)
+        try:
+            return Shell.run(command)
+        except Exception as e:
+            console.error(f"Failed to list jobs: {e}")
+            return ""
 
     def storage(self, directory: str) -> str:
         """Get storage information for a directory."""
@@ -314,10 +352,13 @@ class Hpc:
             console.msg(f"Debug: {command}")
             return f"Storage info for {directory}: Not executed (debug)"
         
-        result = Shell.run(command)
-        if result:
-            # du -sh returns "size directory", we only want the size
-            return result.split()[0]
+        try:
+            result = Shell.run(command)
+            if result:
+                # du -sh returns "size directory", we only want the size
+                return result.split()[0]
+        except Exception as e:
+            console.error(f"Failed to get storage info for {directory}: {e}")
         return "unknown"
 
     def edit(self, filename: str, editor: str = "emacs") -> str:
@@ -432,11 +473,14 @@ class Hpc:
     def quota(self) -> str:
         """Check disk quota on the HPC."""
         cmd = f"ssh {self.host} 'quota -s'"
-        if not self.debug:
-            return Shell.run(cmd)
-        else:
+        if self.debug:
             console.msg(f"Debug: {cmd}")
             return "Quota info (debug)"
+        try:
+            return Shell.run(cmd)
+        except Exception as e:
+            console.error(f"Failed to get quota: {e}")
+            return ""
 
     def nodes(self, partition: Optional[str] = None) -> str:
         """Check node status for a partition."""
@@ -445,22 +489,42 @@ class Hpc:
         if partition:
             cmd = f"ssh {host} 'sinfo -p {partition}'"
         
-        if not self.debug:
-            return Shell.run(cmd)
-        else:
+        if self.debug:
             console.msg(f"Debug: {cmd}")
             return "Node info (debug)"
+        try:
+            return Shell.run(cmd)
+        except Exception as e:
+            console.error(f"Failed to get node status: {e}")
+            return ""
 
     def wait(self, job_id: str, interval: int = 30) -> bool:
-        """Wait for a Slurm job to complete."""
+        """Wait for a Slurm job to complete with detailed status updates."""
         import time
         console.msg(f"Waiting for job {job_id} to complete...")
         while True:
             status = self.get_job_status(job_id)
-            if not status or "R" not in status and "PD" not in status:
-                console.msg(f"Job {job_id} has finished.")
+            if not status:
+                console.msg(f"Job {job_id} is no longer in the queue (finished or failed).")
                 return True
+            
+            if "R" in status:
+                console.msg(f"Job {job_id} is currently RUNNING...")
+            elif "PD" in status:
+                console.msg(f"Job {job_id} is PENDING...")
+            else:
+                console.msg(f"Job {job_id} has finished (Status: {status.strip()}).")
+                return True
+            
             time.sleep(interval)
+
+    def monitor_job(self, job_id: str, interval: int = 10) -> None:
+        """Actively monitor a job and print status updates."""
+        console.banner(f"Monitoring Job {job_id}")
+        try:
+            self.wait(job_id, interval)
+        except KeyboardInterrupt:
+            console.msg("Monitoring stopped by user.")
 
     def template(self, key: Optional[str] = None) -> str:
         """Generate a boilerplate .sbatch script."""
