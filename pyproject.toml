@@ -19,12 +19,19 @@ classifiers = [
 ]
 dependencies = [
     "cloudmesh-ai-cmc",
-    "click",
-    "rich",
-    "pytest",
     "cloudmesh-ai-common",
-    "questionary",
+    "cloudmesh-ai-vpn",
+    "click",
+    "pyyaml",
+]
+
+[project.optional-dependencies]
+ui = [
     "textual",
+    "questionary",
+]
+dev = [
+    "pytest",
 ]
 [tool.setuptools.dynamic]
 version = {file = "VERSION"}

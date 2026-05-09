@@ -5,7 +5,8 @@ Cloudmesh AI HPC is a tool designed to simplify access and management of resourc
 ## Features
 
 - **Interactive Login**: Simplified interactive job submission using `ijob`, including an interactive UI for partition selection.
-- **Slurm Management**: Easy access to Slurm directives and job cancellation.
+- **Slurm Management**: Full lifecycle management of Slurm jobs, including status monitoring, listing active jobs, and cancellation.
+- **Local Configuration**: Persist your preferred host and partition defaults locally.
 - **Image Building**: Build Apptainer images directly on the cluster.
 - **Storage Monitoring**: Quickly check directory sizes on the remote host.
 - **Remote Editing**: Edit files on the cluster using your preferred editor.
@@ -27,7 +28,11 @@ All commands are accessed via the `cmc hpc` group.
 
 ### General Information
 ```bash
+# Show current configuration and available partitions
 cmc hpc info
+cmc hpc info <host>
+
+# Show hardware and queue configuration
 cmc hpc config
 ```
 
@@ -58,10 +63,29 @@ cmc hpc slurm info <key> [--host <host>]
 cmc hpc slurm run <key> [--sbatch "param:value,param2:value2"] [--host <host>]
 ```
 
+**Monitor Jobs:**
+```bash
+# Get status of a specific job
+cmc hpc slurm status <job_id>
+
+# List all active jobs for the current user
+cmc hpc slurm list
+```
+
 **Cancel a Job:**
 ```bash
 cmc hpc slurm cancel <job_id>
 ```
+
+### Configuration & Defaults
+You can set your preferred default host and partition so you don't have to specify them in every command.
+
+```bash
+# Set default host and partition
+cmc hpc set-default --host uva --partition a100
+```
+
+These settings are stored in `~/.cloudmesh/hpc.yaml`. You can also manually edit this file to add custom partitions.
 
 ### Image Management
 Build Apptainer images from a definition file.
@@ -119,15 +143,15 @@ cmc hpc tutorial [keyword]
 cmc hpc ticket
 ```
 
-## Configuration
+## Configuration Details
 
-The tool uses a built-in directive map to handle Slurm configurations for various hosts (e.g., `rivanna`, `hipergator`). These directives include:
+The tool uses a built-in directive map to handle Slurm configurations for various hosts. These directives include:
 - `partition`
 - `account`
 - `gres` (GPU requests)
 - `constraint`
 
-You can override these using the `--sbatch` option in the format `key:value,key2:value2`.
+**Sbatch Parameters**: You can override any directive using the `--sbatch` option. The format must be `key:value`, with multiple parameters separated by commas (e.g., `nodes:2,time:02:00:00`).
 
 ## Debugging
 
@@ -136,7 +160,10 @@ Most commands support a `--debug` flag. When enabled, the tool will print the ex
 Example:
 ```bash
 cmc hpc slurm cancel 12345 --debug
+```
+
 ## Core Dependencies
 This project depends on the following core components of the Cloudmesh AI ecosystem:
 - [cloudmesh-ai-common](https://github.com/cloudmesh-ai/cloudmesh-ai-common)
 - [cloudmesh-ai-cmc](https://github.com/cloudmesh-ai/cloudmesh-ai-cmc)
+- [cloudmesh-ai-vpn](https://github.com/cloudmesh-ai/cloudmesh-ai-vpn)

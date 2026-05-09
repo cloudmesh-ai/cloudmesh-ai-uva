@@ -1,5 +1,5 @@
 ######################################################################
-# Cloudmesh UVA Makefile
+# Cloudmesh Hpc Makefile
 ######################################################################
 
 # Variables
@@ -14,24 +14,24 @@ PYENVVERSION := $(shell pyenv version-name)
 
 .PHONY: help install clean build test reinstall \
         check tag release test-html test-cov setup-test uninstall-all \
-        tmp-setup
+        tmp-setup sync
 
 help:
 	@echo
-	@echo "Makefile for the UVA Cloudmesh extension:"
+	@echo "Makefile for the Hpc Cloudmesh extension:"
 	@echo
 	@echo "  install       - Install in editable mode for local development"
 	@echo "  reinstall     - Clean and reinstall locally"
 	@echo "  clean         - Remove build artifacts, cache, and test debris"
 	@echo "  build         - Build distributions (sdist and wheel)"
 	@echo "  check         - Build and validate metadata/README"
-	@echo "  test          - Run pytest suite"
+	@echo "  test          - Run pytest suite with HTML report"
 	@echo "  test-cov      - Run pytest with coverage report"
 	@echo "  setup-test    - Install test deps"
 	@echo "  tag           - Create a git tag based on current version and push"
 	@echo "  release       - Full Production Cycle: upload + tag"
+	@echo "  sync          - Sync changed .py files to remote server"
 	@echo
-
 # --- DEVELOPMENT & TESTING ---
 
 install:
@@ -48,7 +48,7 @@ test-html:
 	open .report.html
 
 test-cov:
-	pytest --cov=cloudmesh.ai.command.uva --cov-report=term-missing tests/
+	$(PYTHON) -m pytest --cov=cloudmesh.ai.command.hpc --cov-report=term-missing tests/
 
 setup-test:
 	$(PIP) install pytest pytest-mock pytest-cov pytest-html
@@ -75,6 +75,14 @@ tag:
 release: upload tag
 	@echo "Production release and tagging complete."
 
+# --- REMOTE SYNC ---
+
+sync:
+	@echo "Syncing changed .py files to white:work/cloudmesh-ai-hpc..."
+	rsync -avzi --exclude="__pycache__/" --exclude="*.egg-info/" --include="*.py" --include="*/" --exclude="*" . white:work/cloudmesh-ai-hpc
+	@echo "Syncing common library..."
+	$(MAKE) -C ../cloudmesh-ai-common sync
+
 # --- CLEANUP & REINSTALL ---
 
 uninstall-all:
@@ -83,7 +91,7 @@ uninstall-all:
 
 clean:
 	@echo "Cleaning artifacts and temporary test plugins..."
-	rm -rf build/ dist/ *.egg-info .pytest_cache .coverage
+	rm -rf build/ dist/ *.egg-info .pytest_cache .coverage .report.html
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	find . -type f -name "*.pyc" -delete
 	rm -rf tmp/cloudmesh-ai-*

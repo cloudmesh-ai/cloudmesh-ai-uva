@@ -89,7 +89,11 @@ def slurm_info(host: str, key: str) -> None:
 def slurm_run(sbatch: Optional[str], host: str, key: Optional[str], debug: bool) -> None:
     """Runs a Slurm command."""
     hpc = Hpc(host=host, debug=debug)
-    sbatch_params = hpc.parse_sbatch_parameter(sbatch) if sbatch else None
+    try:
+        sbatch_params = hpc.parse_sbatch_parameter(sbatch) if sbatch else None
+    except ValueError as e:
+        console.error(str(e))
+        return
     hpc.login(host, key, sbatch_params=sbatch_params)
 
 @slurm_group.command(name="cancel")
@@ -99,6 +103,23 @@ def slurm_cancel(job_id: str, debug: bool) -> None:
     """Cancels a Slurm job."""
     hpc = Hpc(debug=debug)
     hpc.cancel(job_id)
+
+@slurm_group.command(name="status")
+@click.argument("job_id")
+@click.option("--debug", is_flag=True, help="Enable debug mode")
+def slurm_status(job_id: str, debug: bool) -> None:
+    """Gets the status of a specific Slurm job."""
+    hpc = Hpc(debug=debug)
+    result = hpc.get_job_status(job_id)
+    console.print(result)
+
+@slurm_group.command(name="list")
+@click.option("--debug", is_flag=True, help="Enable debug mode")
+def slurm_list(debug: bool) -> None:
+    """Lists all active Slurm jobs for the current user."""
+    hpc = Hpc(debug=debug)
+    result = hpc.list_jobs()
+    console.print(result)
 
 # --- Image Group ---
 @hpc_group.group(name="image")
@@ -214,12 +235,18 @@ class PartitionSelectorApp(App):
 @click.option("--ui", is_flag=True, help="Use interactive UI to select partition")
 def login_cmd(sbatch: Optional[str], host: str, key: Optional[str], debug: bool, ui: bool) -> None:
     """Logs into an interactive node on HPC."""
-    hpc = Hpc(host=host, debug=debug)
+    # Resolve host: if it's the default "hpc", use the Hpc class default (e.g., "uva")
+    actual_host = host
+    if host == "hpc":
+        hpc_temp = Hpc()
+        actual_host = hpc_temp.host
+    
+    hpc = Hpc(host=actual_host, debug=debug)
     
     if ui:
         try:
             # Use Textual app for partition selection
-            app = PartitionSelectorApp(host, hpc)
+            app = PartitionSelectorApp(actual_host, hpc)
             selected_key = app.run()
 
             if not selected_key:
@@ -259,7 +286,11 @@ def login_cmd(sbatch: Optional[str], host: str, key: Optional[str], debug: bool,
             console.msg("\nLogin cancelled by user (Ctrl+C).")
             return
 
-    sbatch_params = hpc.parse_sbatch_parameter(sbatch) if sbatch else None
+    try:
+        sbatch_params = hpc.parse_sbatch_parameter(sbatch) if sbatch else None
+    except ValueError as e:
+        console.error(str(e))
+        return
     hpc.login(host, key, sbatch_params=sbatch_params)
 
 @hpc_group.command(name="tutorial")
@@ -293,6 +324,14 @@ def edit_cmd(filename: str, editor: str, debug: bool) -> None:
     """Edits a file on HPC."""
     hpc = Hpc(debug=debug)
     hpc.edit(filename, editor)
+
+@hpc_group.command(name="set-default")
+@click.option("--host", required=True, help="Default host to use")
+@click.option("--partition", help="Default partition key to use")
+def set_default_cmd(host: str, partition: Optional[str]) -> None:
+    """Set the default host and partition for future commands."""
+    hpc = Hpc()
+    hpc.set_default(host, partition)
 
 @hpc_group.command(name="config")
 def config_cmd() -> None:
@@ -346,16 +385,60 @@ def config_cmd() -> None:
             print_table("Queues", header, data, "https://www.rc.virginia.edu/userinfo/hpc/#job-queues")
 
 @hpc_group.command(name="info")
-def info_cmd() -> None:
-    """Prints information about the current HPC configuration."""
+@click.argument("key", required=False)
+def info_cmd(key: Optional[str]) -> None:
+    """Prints information about the current HPC configuration or a specific partition."""
     hpc = Hpc()
-    host = hpc.host
-    default_partition = hpc.get_default_partition(host)
-    available_hosts = list(hpc.directive.keys())
+    
+    # 1. If no key provided, show default host info
+    if not key:
+        host = hpc.host
+        default_partition = hpc.get_default_partition(host)
+        available_hosts = list(hpc.directive.keys())
+        console.print("\n[bold]HPC Configuration Info[/bold]")
+        console.print(f"Current Host      : {host}")
+        console.print(f"Default Partition : {default_partition or 'Not set'}")
+        console.print(f"Available Hosts   : {', '.join(available_hosts)}")
+        
+        header, data = hpc.get_partition_data(host)
+        if header and data:
+            console.table(header, data, title="Partitions")
+        console.print()
+        return
 
-    console.banner("HPC Configuration Info", f"Current Host: {host}")
-    console.print(f"Default Partition: {default_partition or 'Not set'}")
-    console.print(f"Available Hosts: {', '.join(available_hosts)}")
+    # 2. Check if the key is a top-level host
+    if key in hpc.directive:
+        host = key
+        default_partition = hpc.get_default_partition(host)
+        available_hosts = list(hpc.directive.keys())
+        console.print("\n[bold]HPC Host Info[/bold]")
+        console.print(f"Host              : {host}")
+        console.print(f"Default Partition : {default_partition or 'Not set'}")
+        console.print(f"Available Hosts   : {', '.join(available_hosts)}")
+        
+        header, data = hpc.get_partition_data(host)
+        if header and data:
+            console.table(header, data, title="Partitions")
+        console.print()
+        return
+
+    # 3. Check if the key is a partition key for any host
+    for host, partitions in hpc.directive.items():
+        if key in partitions:
+            directives = partitions[key]
+            console.print("\n[bold]HPC Partition Info[/bold]")
+            console.print(f"Host       : {host}")
+            console.print(f"Partition  : {key}")
+            for k, v in directives.items():
+                console.print(f"{k.ljust(12)} : {v}")
+            console.print()
+            return
+
+    # 4. Not found
+    console.error(f"Key '{key}' not found as a host or partition key.")
+    # Fallback to default info
+    host = hpc.host
+    console.print(f"\nDefault Host: {host}")
 
 def register(cli: Any) -> None:
     cli.add_command(hpc_group, name="hpc")
