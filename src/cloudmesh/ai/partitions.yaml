@@ -1,6 +1,6 @@
 cloudmesh:
   ai:
-    dafault:
+    default:
       partition: "cloudmesh.ai.partition.uva.a100-dgx"
     partition:
       ubuntu:

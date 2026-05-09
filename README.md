@@ -23,12 +23,12 @@ pip install .
 
 ## Usage
 
-All commands are accessed via the `cmc uva` group.
+All commands are accessed via the `cmc hpc` group.
 
 ### General Information
 ```bash
-cmc uva info
-cmc uva config
+cmc hpc info
+cmc hpc config
 ```
 
 ### Login and Interactive Sessions
@@ -36,13 +36,13 @@ Log into an interactive node. You can specify a host and a configuration key (e.
 
 ```bash
 # Basic login
-cmc uva login <key>
+cmc hpc login <key>
 
 # Interactive UI to browse and select from all available partition keys
-cmc uva login --ui
+cmc hpc login --ui
 
 # Login with specific host and sbatch parameters
-cmc uva login <key> --host <host> --sbatch "nodes:1,time:01:00:00"
+cmc hpc login <key> --host <host> --sbatch "nodes:1,time:01:00:00"
 ```
 
 ### Slurm Commands
@@ -50,31 +50,31 @@ Manage Slurm directives and jobs.
 
 **View Directives:**
 ```bash
-cmc uva slurm info <key> [--host <host>]
+cmc hpc slurm info <key> [--host <host>]
 ```
 
 **Run a Job (Interactive):**
 ```bash
-cmc uva slurm run <key> [--sbatch "param:value,param2:value2"] [--host <host>]
+cmc hpc slurm run <key> [--sbatch "param:value,param2:value2"] [--host <host>]
 ```
 
 **Cancel a Job:**
 ```bash
-cmc uva slurm cancel <job_id>
+cmc hpc slurm cancel <job_id>
 ```
 
 ### Image Management
 Build Apptainer images from a definition file.
 
 ```bash
-cmc uva image build <definition_file>
+cmc hpc image build <definition_file>
 ```
 
 ### Storage
 Check storage usage for a specific directory.
 
 ```bash
-cmc uva storage info <directory>
+cmc hpc storage info <directory>
 ```
 
 ### VPN Management
@@ -82,30 +82,30 @@ Manage your VPN connection to UVA.
 
 ```bash
 # Connect to VPN
-cmc uva vpn on
+cmc hpc vpn on
 
 # Disconnect from VPN
-cmc uva vpn off
+cmc hpc vpn off
 
 # Show current IP and connection info
-cmc uva vpn info
+cmc hpc vpn info
 
 # Check if VPN is enabled
-cmc uva vpn status
+cmc hpc vpn status
 ```
 
 ### Remote Editing
 Edit a file on the remote host using a specified editor (defaults to `emacs`).
 
 ```bash
-cmc uva edit <filename> [--editor <editor_name>]
+cmc hpc edit <filename> [--editor <editor_name>]
 ```
 
 ### Jupyter Notebooks
 Start a Jupyter notebook on the cluster.
 
 ```bash
-cmc uva jupyter [--port <port>]
+cmc hpc jupyter [--port <port>]
 ```
 
 ### Tutorials and Support
@@ -113,10 +113,10 @@ Quickly open helpful links in your browser.
 
 ```bash
 # Open tutorials (optional keyword: pod, rclone, globus, apptainer, training, hpc, system)
-cmc uva tutorial [keyword]
+cmc hpc tutorial [keyword]
 
 # Open the support request form
-cmc uva ticket
+cmc hpc ticket
 ```
 
 ## Configuration
@@ -135,7 +135,7 @@ Most commands support a `--debug` flag. When enabled, the tool will print the ex
 
 Example:
 ```bash
-cmc uva slurm cancel 12345 --debug
+cmc hpc slurm cancel 12345 --debug
 ## Core Dependencies
 This project depends on the following core components of the Cloudmesh AI ecosystem:
 - [cloudmesh-ai-common](https://github.com/cloudmesh-ai/cloudmesh-ai-common)

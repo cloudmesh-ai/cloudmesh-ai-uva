@@ -8,8 +8,10 @@ from cloudmesh.ai.common.Shell import Shell
 logger = get_contextual_logger("hpc")
 
 
+from typing import Dict, List, Tuple, Optional, Any
+
 class Hpc:
-    def __init__(self, host="hpc", debug=False):
+    def __init__(self, host: str = "hpc", debug: bool = False) -> None:
         """
         Initialize the Hpc class.
         """
@@ -20,14 +22,14 @@ class Hpc:
             # Load partitions from the file relative to this module
             path = os.path.join(os.path.dirname(__file__), "partitions.yaml")
             data = load_yaml(path)
-            self.ai_config = data.get("cloudmesh", {}).get("ai", {})
-            self.directive = self.ai_config.get("partition", {})
-        except Exception as e:
+            self.ai_config: Dict[str, Any] = data.get("cloudmesh", {}).get("ai", {})
+            self.directive: Dict[str, Any] = self.ai_config.get("partition", {})
+        except (FileNotFoundError, RuntimeError) as e:
             console.error(f"Failed to load partitions.yaml: {e}")
             self.ai_config = {}
             self.directive = {}
 
-    def parse_sbatch_parameter(self, parameters):
+    def parse_sbatch_parameter(self, parameters: str) -> Dict[str, str]:
         """Parse the parameters string and convert it to a dictionary."""
         result = {}
         data = parameters.split(",")
@@ -37,7 +39,7 @@ class Hpc:
                 result[key] = value
         return result
 
-    def create_slurm_directives(self, host=None, key=None):
+    def create_slurm_directives(self, host: Optional[str] = None, key: Optional[str] = None) -> str:
         """Create Slurm directives based on the provided host and key."""
         host = host or self.host
         try:
@@ -53,7 +55,7 @@ class Hpc:
             block += f"#SBATCH --{k}={v}\n"
         return block
 
-    def get_partition_table_data(self, host):
+    def get_partition_table_data(self, host: str) -> Tuple[Optional[str], Optional[List[Dict[str, str]]]]:
         """
         Prepare table-like data for interactive selection.
         Returns a tuple of (header_string, choices_list).
@@ -105,7 +107,7 @@ class Hpc:
 
         return header, choices
 
-    def get_default_partition(self, host):
+    def get_default_partition(self, host: str) -> Optional[str]:
         """Return the default partition for the host if it exists."""
         if host not in self.directive:
             return None
@@ -117,8 +119,8 @@ class Hpc:
             # Return the actual partition name pointed to by 'default'
             return host_partitions["default"].get("partition")
 
-        # 2. Check for global default (handling the 'dafault' typo in YAML)
-        global_default = self.ai_config.get("dafault", {}).get("partition")
+        # 2. Check for global default
+        global_default = self.ai_config.get("default", {}).get("partition")
         if global_default:
             # Return only the short key (e.g., 'a100-dgx' from 'cloudmesh.ai.partition.uva.a100-dgx')
             return global_default.split(".")[-1]
@@ -128,7 +130,7 @@ class Hpc:
         keys = [k for k in host_partitions.keys() if k != "default"]
         return next(iter(keys)) if keys else None
 
-    def get_login_command(self, host, key, sbatch_params=None):
+    def get_login_command(self, host: Optional[str], key: Optional[str], sbatch_params: Optional[Dict[str, str]] = None) -> Optional[str]:
         """Construct the SSH ijob command without executing it."""
         host = host or self.host
         if not key:
@@ -145,7 +147,7 @@ class Hpc:
         parameters = "".join([f" --{k}={v}" for k, v in directives.items()])
         return f'ssh -tt {host} "/opt/rci/bin/ijob{parameters}"'
 
-    def login(self, host, key, sbatch_params=None):
+    def login(self, host: Optional[str], key: Optional[str], sbatch_params: Optional[Dict[str, str]] = None) -> str:
         """SSH on HPC by executing an interactive job command."""
         command = self.get_login_command(host, key, sbatch_params)
         if not command:
@@ -159,10 +161,10 @@ class Hpc:
 
         console.msg(command)
         if not self.debug:
-            os.system(command)
+            Shell.run(command)
         return ""
 
-    def create_apptainer_image(self, name):
+    def create_apptainer_image(self, name: str) -> None:
         """Create an apptainer image on HPC."""
         try:
             cache = os.environ.get("APPTAINER_CACHEDIR", "/scratch/$USER/.apptainer/")
@@ -176,7 +178,7 @@ class Hpc:
             console.print(f"Definition       : {name}")
             console.print()
             StopWatch.start("build image")
-            os.system(f"apptainer build {image} {name}")
+            Shell.run(f"apptainer build {image} {name}")
             StopWatch.stop("build image")
 
             # Use Shell.run to get size
@@ -187,25 +189,25 @@ class Hpc:
             console.print(f"Time to build {image}s ({size}) {timer}s")
             console.print()
 
-        except Exception as e:
-            console.error(e)
+        except (RuntimeError, OSError) as e:
+            console.error(f"Apptainer build failed: {e}")
 
-    def jupyter(self, port=8000):
+    def jupyter(self, port: int = 8000) -> None:
         """Start a Jupyter notebook on HPC."""
         console.print(f"Starting Jupyter on port {port}...")
         console.print("Note: This requires an active VPN connection.")
         console.print(f"Command: jupyter notebook --no-browser --port={port}")
         console.print(f"Tunnel: ssh -L 8080:localhost:{port} hpc")
 
-    def cancel(self, job_id):
+    def cancel(self, job_id: str) -> str:
         """Cancel a Slurm job."""
         command = f"ssh {self.host} 'scancel {job_id}'"
         console.msg(f"Canceling job {job_id}...")
         if not self.debug:
-            os.system(command)
+            Shell.run(command)
         return ""
 
-    def storage(self, directory):
+    def storage(self, directory: str) -> str:
         """Get storage information for a directory."""
         command = f"ssh {self.host} 'du -sh {directory}'"
         if self.debug:
@@ -215,10 +217,10 @@ class Hpc:
         result = Shell.run(command)
         return result
 
-    def edit(self, filename, editor="emacs"):
+    def edit(self, filename: str, editor: str = "emacs") -> str:
         """Edit a file on the remote host."""
         command = f"ssh -t {self.host} '{editor} {filename}'"
         console.msg(f"Editing {filename} with {editor}...")
         if not self.debug:
-            os.system(command)
+            Shell.run(command)
         return ""

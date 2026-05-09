@@ -4,6 +4,7 @@ import csv
 import os
 import re
 import questionary
+from typing import Optional, Any
 from cloudmesh.ai.common.io import console
 from cloudmesh.ai.vpn.vpn import Vpn
 from textual.app import App, ComposeResult
@@ -28,7 +29,7 @@ def storage_group():
 @click.argument("directory")
 @click.option("--info", is_flag=True, help="Detailed information")
 @click.option("--debug", is_flag=True, help="Enable debug mode")
-def storage_info(directory, info, debug):
+def storage_info(directory: str, info: bool, debug: bool) -> None:
     """Obtains information about the storage associated with a directory on HPC."""
     hpc = Hpc(debug=debug)
     result = hpc.storage(directory)
@@ -41,25 +42,25 @@ def vpn_group():
     pass
 
 @vpn_group.command(name="on")
-def vpn_on():
+def vpn_on() -> None:
     """Switches the VPN on."""
     vpn = Vpn(service="hpc")
     vpn.connect()
 
 @vpn_group.command(name="off")
-def vpn_off():
+def vpn_off() -> None:
     """Switches the VPN off."""
     vpn = Vpn(service="hpc")
     vpn.disconnect()
 
 @vpn_group.command(name="info")
-def vpn_info():
+def vpn_info() -> None:
     """Prints information about the current connection to the internet."""
     vpn = Vpn(service="hpc")
     vpn.info()
 
 @vpn_group.command(name="status")
-def vpn_status():
+def vpn_status() -> None:
     """Prints True if VPN is enabled, False if not."""
     vpn = Vpn(service="hpc")
     enabled = vpn.enabled()
@@ -74,7 +75,7 @@ def slurm_group():
 @slurm_group.command(name="info")
 @click.option("--host", default="hpc", help="Host to use")
 @click.argument("key")
-def slurm_info(host, key):
+def slurm_info(host: str, key: str) -> None:
     """Prints Slurm directive information."""
     hpc = Hpc()
     directives = hpc.create_slurm_directives(host, key)
@@ -85,7 +86,7 @@ def slurm_info(host, key):
 @click.option("--host", default="hpc", help="Host to use")
 @click.argument("key", required=False)
 @click.option("--debug", is_flag=True, help="Enable debug mode")
-def slurm_run(sbatch, host, key, debug):
+def slurm_run(sbatch: Optional[str], host: str, key: Optional[str], debug: bool) -> None:
     """Runs a Slurm command."""
     hpc = Hpc(host=host, debug=debug)
     sbatch_params = hpc.parse_sbatch_parameter(sbatch) if sbatch else None
@@ -94,7 +95,7 @@ def slurm_run(sbatch, host, key, debug):
 @slurm_group.command(name="cancel")
 @click.argument("job_id")
 @click.option("--debug", is_flag=True, help="Enable debug mode")
-def slurm_cancel(job_id, debug):
+def slurm_cancel(job_id: str, debug: bool) -> None:
     """Cancels a Slurm job."""
     hpc = Hpc(debug=debug)
     hpc.cancel(job_id)
@@ -107,7 +108,7 @@ def image_group():
 
 @image_group.command(name="build")
 @click.argument("deffile")
-def image_build(deffile):
+def image_build(deffile: str) -> None:
     """Builds an image from a definition file."""
     hpc = Hpc()
     hpc.create_apptainer_image(deffile)
@@ -211,7 +212,7 @@ class PartitionSelectorApp(App):
 @click.argument("key", required=False)
 @click.option("--debug", is_flag=True, help="Enable debug mode")
 @click.option("--ui", is_flag=True, help="Use interactive UI to select partition")
-def login_cmd(sbatch, host, key, debug, ui):
+def login_cmd(sbatch: Optional[str], host: str, key: Optional[str], debug: bool, ui: bool) -> None:
     """Logs into an interactive node on HPC."""
     hpc = Hpc(host=host, debug=debug)
     
@@ -263,7 +264,7 @@ def login_cmd(sbatch, host, key, debug, ui):
 
 @hpc_group.command(name="tutorial")
 @click.argument("keyword", required=False)
-def tutorial_cmd(keyword):
+def tutorial_cmd(keyword: Optional[str]) -> None:
     """Shows HPC tutorials based on keyword."""
     urls = {
         "pod": "https://infomall.org/uva/docs/tutorial/rivanna-superpod/",
@@ -279,7 +280,7 @@ def tutorial_cmd(keyword):
     webbrowser.open(url)
 
 @hpc_group.command(name="ticket")
-def ticket_cmd():
+def ticket_cmd() -> None:
     """Opens the support request form."""
     url = "https://www.rc.virginia.edu/form/support-request/"
     console.msg(f"Opening support ticket form: {url}")
@@ -287,7 +288,7 @@ def ticket_cmd():
 
 @hpc_group.command(name="jupyter")
 @click.option("--port", default=8000, help="Port for Jupyter")
-def jupyter_cmd(port):
+def jupyter_cmd(port: int) -> None:
     """Starts a Jupyter notebook."""
     hpc = Hpc()
     hpc.jupyter(port)
@@ -296,13 +297,13 @@ def jupyter_cmd(port):
 @click.argument("filename")
 @click.option("--editor", default="emacs", help="Editor to use")
 @click.option("--debug", is_flag=True, help="Enable debug mode")
-def edit_cmd(filename, editor, debug):
+def edit_cmd(filename: str, editor: str, debug: bool) -> None:
     """Edits a file on HPC."""
     hpc = Hpc(debug=debug)
     hpc.edit(filename, editor)
 
 @hpc_group.command(name="config")
-def config_cmd():
+def config_cmd() -> None:
     """Prints the hardware and queue configuration for HPC."""
     
     # Path to config.csv relative to this file
@@ -353,9 +354,9 @@ def config_cmd():
             print_table("Queues", header, data, "https://www.rc.virginia.edu/userinfo/hpc/#job-queues")
 
 @hpc_group.command(name="info")
-def info_cmd():
+def info_cmd() -> None:
     """Print hello world."""
     console.print("hello world")
 
-def register(cli):
+def register(cli: Any) -> None:
     cli.add_command(hpc_group, name="hpc")
