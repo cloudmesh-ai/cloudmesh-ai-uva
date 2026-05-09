@@ -92,8 +92,11 @@ cmc hpc login a100
 ### Slurm Job Management
 
 **5. Generate and submit a job**
+
+Generate a boilerplate .sbatch script
+
+
 ```bash
-# Generate a boilerplate .sbatch script
 cmc hpc slurm template a100 > my_job.sh
 ```
 > ```text
@@ -108,17 +111,19 @@ cmc hpc slurm template a100 > my_job.sh
 > hostname
 > ```
 
+Upload and submit a script
+
 ```bash
-# Upload and submit a script
 cmc hpc slurm submit my_job.sh
 ```
 > ```text
 > Submitted: 123456
 > ```
 
+Get detailed information about a specific job
+
 **6. Monitor and inspect jobs**
 ```bash
-# Get detailed information about a specific job
 cmc hpc slurm job-info 123456
 ```
 > ```text
@@ -126,8 +131,9 @@ cmc hpc slurm job-info 123456
 > CPU_ تعداد=1 NodeList=gpu-node-01 ...
 > ```
 
+Get status of a specific job
+
 ```bash
-# Get status of a specific job
 cmc hpc slurm status 123456
 ```
 > ```text
@@ -135,8 +141,10 @@ cmc hpc slurm status 123456
 > 123456  gpu        my_job   user    R   0:05  1
 > ```
 
+
+List all active jobs for the current user
+
 ```bash
-# List all active jobs for the current user
 cmc hpc slurm list
 ```
 > ```text
@@ -145,8 +153,9 @@ cmc hpc slurm list
 > 123457  parallel   test_job user    PD  0:00  2
 > ```
 
+Wait for a job to complete
+
 ```bash
-# Wait for a job to complete
 cmc hpc slurm wait 123456
 ```
 > ```text
@@ -157,8 +166,10 @@ cmc hpc slurm wait 123456
 > ```
 
 **7. Logs and Resources**
+
+Read the output log of a job
+
 ```bash
-# Read the output log of a job
 cmc hpc slurm logs 123456
 ```
 > ```text
@@ -166,8 +177,9 @@ cmc hpc slurm logs 123456
 > gpu-node-01
 > ```
 
+Check disk quota on the HPC
+
 ```bash
-# Check disk quota on the HPC
 cmc hpc slurm quota
 ```
 > ```text
@@ -177,8 +189,9 @@ cmc hpc slurm quota
 > /scratch    10G      1T      1T      -
 > ```
 
+
+Check node status for a partition
 ```bash
-# Check node status for a partition
 cmc hpc slurm nodes --partition gpu
 ```
 > ```text
@@ -187,8 +200,10 @@ cmc hpc slurm nodes --partition gpu
 > ```
 
 **8. Directives & Cancellation**
+
+View Slurm directives for a partition key
+
 ```bash
-# View Slurm directives for a partition key
 cmc hpc slurm info a100
 ```
 > ```text
@@ -199,8 +214,9 @@ cmc hpc slurm info a100
 > gres       : gpu:a100:1
 > ```
 
+Cancel a Slurm job
+
 ```bash
-# Cancel a Slurm job
 cmc hpc slurm cancel 123456
 ```
 > ```text
