@@ -266,16 +266,8 @@ def login_cmd(sbatch: Optional[str], host: str, key: Optional[str], debug: bool,
 @click.argument("keyword", required=False)
 def tutorial_cmd(keyword: Optional[str]) -> None:
     """Shows HPC tutorials based on keyword."""
-    urls = {
-        "pod": "https://infomall.org/uva/docs/tutorial/rivanna-superpod/",
-        "rclone": "https://infomall.org/uva/docs/tutorial/rclone/",
-        "globus": "https://infomall.org/uva/docs/tutorial/globus/",
-        "apptainer": "https://www.rc.virginia.edu/userinfo/rivanna/software/apptainer/",
-        "training": "https://infomall.org/uva/docs/tutorial/cybertraining/",
-        "hpc": "https://infomall.org/uva/docs/tutorial/rivanna/",
-        "system": "https://infomall.org/uva/docs/tutorial/rivanna/",
-    }
-    url = urls.get(keyword, "https://infomall.org/uva/docs/tutorial/")
+    hpc = Hpc()
+    url = hpc.get_tutorial_url(keyword)
     console.msg(f"Opening tutorial for {keyword or 'general'}: {url}")
     webbrowser.open(url)
 
@@ -306,8 +298,8 @@ def edit_cmd(filename: str, editor: str, debug: bool) -> None:
 def config_cmd() -> None:
     """Prints the hardware and queue configuration for HPC."""
     
-    # Path to config.csv relative to this file
-    config_path = os.path.join(os.path.dirname(__file__), '..', 'config.csv')
+    hpc = Hpc()
+    config_path = hpc.get_config_path()
     
     if not os.path.exists(config_path):
         console.error(f"Configuration file not found: {config_path}")
@@ -355,8 +347,15 @@ def config_cmd() -> None:
 
 @hpc_group.command(name="info")
 def info_cmd() -> None:
-    """Print hello world."""
-    console.print("hello world")
+    """Prints information about the current HPC configuration."""
+    hpc = Hpc()
+    host = hpc.host
+    default_partition = hpc.get_default_partition(host)
+    available_hosts = list(hpc.directive.keys())
+
+    console.banner("HPC Configuration Info", f"Current Host: {host}")
+    console.print(f"Default Partition: {default_partition or 'Not set'}")
+    console.print(f"Available Hosts: {', '.join(available_hosts)}")
 
 def register(cli: Any) -> None:
     cli.add_command(hpc_group, name="hpc")

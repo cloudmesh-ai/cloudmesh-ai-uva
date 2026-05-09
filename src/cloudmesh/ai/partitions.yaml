@@ -78,3 +78,12 @@ cloudmesh:
       frontier:
         default:
           partition: "batch"
+    tutorials:
+      pod: "https://infomall.org/uva/docs/tutorial/rivanna-superpod/"
+      rclone: "https://infomall.org/uva/docs/tutorial/rclone/"
+      globus: "https://infomall.org/uva/docs/tutorial/globus/"
+      apptainer: "https://www.rc.virginia.edu/userinfo/rivanna/software/apptainer/"
+      training: "https://infomall.org/uva/docs/tutorial/cybertraining/"
+      hpc: "https://infomall.org/uva/docs/tutorial/rivanna/"
+      system: "https://infomall.org/uva/docs/tutorial/rivanna/"
+      default: "https://infomall.org/uva/docs/tutorial/"

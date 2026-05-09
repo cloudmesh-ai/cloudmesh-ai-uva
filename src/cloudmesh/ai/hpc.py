@@ -130,6 +130,17 @@ class Hpc:
         keys = [k for k in host_partitions.keys() if k != "default"]
         return next(iter(keys)) if keys else None
 
+    def get_tutorial_url(self, keyword: Optional[str] = None) -> str:
+        """Return the tutorial URL for the given keyword."""
+        tutorials = self.ai_config.get("tutorials", {})
+        return tutorials.get(keyword, tutorials.get("default", "https://infomall.org/uva/docs/tutorial/"))
+
+    def get_config_path(self) -> str:
+        """Return the path to the config.csv file."""
+        # The config.csv is located in the package root (one level up from src/cloudmesh/ai/)
+        # This is a more robust way to find it relative to this file
+        return os.path.join(os.path.dirname(__file__), "..", "config.csv")
+
     def get_login_command(self, host: Optional[str], key: Optional[str], sbatch_params: Optional[Dict[str, str]] = None) -> Optional[str]:
         """Construct the SSH ijob command without executing it."""
         host = host or self.host
