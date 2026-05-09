@@ -32,8 +32,13 @@ def storage_group():
 def storage_info(directory: str, info: bool, debug: bool) -> None:
     """Obtains information about the storage associated with a directory on HPC."""
     hpc = Hpc(debug=debug)
+    
+    console.print("\n[bold]HPC Configuration Info[/bold]")
+    console.print(f"Current Host      : {hpc.host}")
+    console.print("")
+    
     result = hpc.storage(directory)
-    console.print(result)
+    console.table(["Directory", "Size"], [[directory, result]], title="Storage Info")
 
 # --- VPN Group ---
 @hpc_group.group(name="vpn")
@@ -463,11 +468,11 @@ def info_cmd(key: Optional[str]) -> None:
         console.print(f"Current Host      : {host}")
         console.print(f"Default Partition : {default_partition or 'Not set'}")
         console.print(f"Available Hosts   : {', '.join(available_hosts)}")
-        
+        console.print("")
+
         header, data = hpc.get_partition_data(host)
         if header and data:
             console.table(header, data, title="Partitions")
-        console.print()
         return
 
     # 2. Check if the key is a top-level host
@@ -483,7 +488,6 @@ def info_cmd(key: Optional[str]) -> None:
         header, data = hpc.get_partition_data(host)
         if header and data:
             console.table(header, data, title="Partitions")
-        console.print()
         return
 
     # 3. Check if the key is a partition key for any host
@@ -499,7 +503,19 @@ def info_cmd(key: Optional[str]) -> None:
             return
 
     # 4. Not found
-    console.error(f"Key '{key}' not found as a host or partition key.")
+    # Try to suggest a match from hosts or any partition key
+    all_hosts = list(hpc.directive.keys())
+    all_partitions = []
+    for p in hpc.directive.values():
+        all_partitions.extend(list(p.keys()))
+    
+    suggestion = hpc._suggest_match(key, all_hosts + all_partitions)
+    
+    msg = f"Key '{key}' not found as a host or partition key."
+    if suggestion:
+        msg += f"\nDid you mean '{suggestion}'?"
+    
+    console.error(msg)
     # Fallback to default info
     host = hpc.host
     console.print(f"\nDefault Host: {host}")

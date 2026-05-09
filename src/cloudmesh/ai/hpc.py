@@ -1,5 +1,6 @@
 import os
 import sys
+import difflib
 from cloudmesh.ai.common.io import console, load_yaml
 from cloudmesh.ai.common.logging_utils import get_contextual_logger
 from cloudmesh.ai.common.stopwatch import StopWatch
@@ -53,6 +54,11 @@ class Hpc:
             except Exception as e:
                 console.error(f"Failed to load local config {local_path}: {e}")
 
+    def _suggest_match(self, word: str, possibilities: List[str]) -> Optional[str]:
+        """Suggest the closest match from a list of possibilities."""
+        matches = difflib.get_close_matches(word, possibilities, n=1, cutoff=0.6)
+        return matches[0] if matches else None
+
     def parse_sbatch_parameter(self, parameters: str) -> Dict[str, str]:
         """
         Parse the parameters string and convert it to a dictionary.
@@ -99,9 +105,11 @@ class Hpc:
         try:
             directives = self.directive[host][key]
         except KeyError:
-            console.error(
-                f"In directive searching for:\n  host {host}\n  key {key}\nNot found"
-            )
+            suggestion = self._suggest_match(key, list(self.directive.get(host, {}).keys()))
+            msg = f"In directive searching for:\n  host {host}\n  key {key}\nNot found"
+            if suggestion:
+                msg += f"\nDid you mean '{suggestion}'?"
+            console.error(msg)
             sys.exit(1)
 
         block = ""
@@ -167,6 +175,7 @@ class Hpc:
 
         return header, choices
 
+
     def get_default_partition(self, host: str) -> Optional[str]:
         """Return the default partition for the host if it exists."""
         if host not in self.directive:
@@ -227,9 +236,11 @@ class Hpc:
             # Handle the error case as before
             host = host or self.host
             available_keys = list(self.directive.get(host, {}).keys())
-            console.error(
-                f"Key {key} not found for host {host}. Available keys: {', '.join(available_keys)}"
-            )
+            suggestion = self._suggest_match(key, available_keys) if key else None
+            msg = f"Key {key} not found for host {host}. Available keys: {', '.join(available_keys)}"
+            if suggestion:
+                msg += f"\nDid you mean '{suggestion}'?"
+            console.error(msg)
             return
 
         console.msg(command)
@@ -302,9 +313,12 @@ class Hpc:
         if self.debug:
             console.msg(f"Debug: {command}")
             return f"Storage info for {directory}: Not executed (debug)"
-
+        
         result = Shell.run(command)
-        return result
+        if result:
+            # du -sh returns "size directory", we only want the size
+            return result.split()[0]
+        return "unknown"
 
     def edit(self, filename: str, editor: str = "emacs") -> str:
         """Edit a file on the remote host."""

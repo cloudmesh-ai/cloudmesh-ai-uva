@@ -29,6 +29,7 @@ All commands are accessed via the `cmc hpc` group.
 ### General Information
 ```bash
 # Show current configuration and available partitions
+# Now features bold, compact tables and fuzzy matching for keys
 cmc hpc info
 cmc hpc info <host>
 
@@ -128,7 +129,7 @@ cmc hpc image build <definition_file>
 ```
 
 ### Storage
-Check storage usage for a specific directory.
+Check storage usage for a specific directory. Output is displayed in a formatted table.
 
 ```bash
 cmc hpc storage info <directory>
