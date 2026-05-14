@@ -182,5 +182,57 @@ class TestHpc(unittest.TestCase):
         self.assertIn("#SBATCH --account=ai", template)
         self.assertIn("#!/bin/bash", template)
 
+    def test_sinfo_native_success(self):
+        hpc = Hpc(host="uva")
+        mock_json = [{"partition": "a100", "node": "node01", "gres": "gpu:1", "state": "idle"}]
+        
+        with patch("cloudmesh.ai.slurm.Slurm._run_remote") as mock_run:
+            mock_run.return_value = MagicMock(stdout=json.dumps(mock_json))
+            result = hpc.sinfo(json_support=True)
+            self.assertEqual(result, mock_json)
+            mock_run.assert_called_with("uva", "sinfo --json")
+
+    def test_sinfo_native_fallback(self):
+        hpc = Hpc(host="uva")
+        # First call (native json) fails, second call (fallback parsing) succeeds
+        tabular_output = "a100 node01 gpu:1 idle"
+        expected = [{"partition": "a100", "node": "node01", "gres": "gpu:1", "state": "idle"}]
+        
+        with patch("cloudmesh.ai.slurm.Slurm._run_remote") as mock_run:
+            mock_run.side_effect = [
+                Exception("Command not found"), # Native failure
+                MagicMock(stdout=tabular_output) # Fallback success
+            ]
+            result = hpc.sinfo(json_support=True)
+            self.assertEqual(result, expected)
+
+    def test_sinfo_parsing_success(self):
+        hpc = Hpc(host="uva")
+        tabular_output = "a100 node01 gpu:1 idle\ncpu node02 none alloc"
+        expected = [
+            {"partition": "a100", "node": "node01", "gres": "gpu:1", "state": "idle"},
+            {"partition": "cpu", "node": "node02", "gres": "none", "state": "alloc"}
+        ]
+        
+        with patch("cloudmesh.ai.slurm.Slurm._run_remote") as mock_run:
+            mock_run.return_value = MagicMock(stdout=tabular_output)
+            result = hpc.sinfo(json_support=False)
+            self.assertEqual(result, expected)
+            mock_run.assert_called_with("uva", "sinfo -N -o \"%P %N %G %t\"")
+
+    def test_sinfo_partition_filter(self):
+        hpc = Hpc(host="uva")
+        with patch("cloudmesh.ai.slurm.Slurm._run_remote") as mock_run:
+            mock_run.return_value = MagicMock(stdout="")
+            hpc.sinfo(partition="gpu", json_support=False)
+            mock_run.assert_called_with("uva", "sinfo -p gpu -N -o \"%P %N %G %t\"")
+
+    def test_sinfo_empty_output(self):
+        hpc = Hpc(host="uva")
+        with patch("cloudmesh.ai.slurm.Slurm._run_remote") as mock_run:
+            mock_run.return_value = MagicMock(stdout="")
+            result = hpc.sinfo()
+            self.assertEqual(result, [])
+
 if __name__ == "__main__":
     unittest.main()

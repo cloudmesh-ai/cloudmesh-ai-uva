@@ -1,365 +1,246 @@
 # Cloudmesh AI HPC
 
 **Authors**:
-*   **Gregor von Laszewski** ([laszewski@gmail.com](mailto:laszewski@gmail.com))a
-*   **JP Fleischer**
+*   **Gregor von Laszewski** ([laszewski@gmail.com](mailto:laszewski@gmail.com))
 
-Cloudmesh AI HPC is a tool designed to simplify access and management of resources on High Performance Computing (HPC) clusters, including those at the University of Virginia (UVA) such as Rivanna. It provides a streamlined CLI to handle Slurm jobs, Apptainer images, storage checks, and remote file editing.
+Cloudmesh AI HPC is a powerful CLI tool designed to simplify access and management of resources on High Performance Computing (HPC) clusters, with primary support for the University of Virginia (UVA) Rivanna cluster. It abstracts the complexity of Slurm job submission, Apptainer image management, and remote cluster interaction into a streamlined set of commands.
 
-## Installation
+## Getting Started
 
-### macOS & Linux
+### 1. Installation
+
 **Recommended: Using pipx**
 For the best experience with CLI tools, use `pipx` to install `cloudmesh-ai-hpc` in an isolated environment.
 ```bash
 pipx install cloudmesh-ai-hpc
+# Or from a local directory:
+pipx install .
 ```
-*To install from a local directory: `pipx install .`*
 
 **Using pip**
 ```bash
 pip install cloudmesh-ai-hpc
+# Or from a local directory:
+pip install .
 ```
-*To install from a local directory: `pip install .`*
 
-### Windows
-**Using pip**
-```powershell
-pip install cloudmesh-ai-hpc
-```
-*To install from a local directory: `pip install .`*
-
-## Usage Examples
-
-### General Information
-
-**1. Show current configuration and available partitions**
+### 2. First Steps
+Start by checking your current configuration and available HPC partitions:
 ```bash
 cmc hpc info
 ```
-> ```text
-> HPC Configuration Info
-> Current Host      : uva
-> Default Partition : a100
-> Available Hosts   : uva, rivanna
-> 
-> Partitions
-> ┌──────────┬──────────┬──────────────┬──────────────────────────┐
-> │ Default  │ Key      │ Partition    │ GRES / Constraint        │
-> ├──────────┼──────────┼──────────────┼──────────────────────────┤
-> │ *        │ a100     │ gpu          │ gpu:a100:1               │
-> │          │ v100     │ bii-gpu      │ gpu:v100:1               │
-> └──────────┴──────────┴──────────────┴──────────────────────────┘
-> ```
 
-**2. Show hardware and queue configuration**
-```bash
-cmc hpc config
-```
-> ```text
-> HPC Hardware Configuration
-> ┌──────────────────┬──────────────────────────────────────────┐
-> │ Component        │ Specification                            │
-> ├──────────────────┼──────────────────────────────────────────┤
-> │ CPU              │ AMD EPYC 7742 64-Core                      │
-> │ GPU              │ NVIDIA A100 80GB                          │
-> └──────────────────┴──────────────────────────────────────────┘
-> ```
-
-### Remote Execution & Login
-
-**3. Execute a one-off command on the HPC**
-```bash
-cmc hpc run "ls -la /home/user"
-```
-> ```text
-> total 12
-> drwxr-xr-x 2 user user 4096 May  9 09:00 .
-> drwxr-xr-x 3 user user 4096 May  9 08:00 ..
-> -rw-r--r-- 1 user user  123 May  9 09:00 test.txt
-> ```
-
-**4. SSH into an interactive node**
-```bash
-# Use the login command to establish an SSH session
-cmc hpc login a100
-```
-> ```text
-> ssh -tt uva "/opt/rci/bin/ijob --partition=gpu --account=bii_dsc_community --gres=gpu:a100:1"
-> ✓ Login process started.
-> ```
-
-### Slurm Job Management
-
-**5. Generate and submit a job**
-
-Generate a boilerplate .sbatch script
-
-
-```bash
-cmc hpc slurm template a100 > my_job.sh
-```
-> ```text
-> #SBATCH --partition=gpu
-> #SBATCH --account=bii_dsc_community
-> #SBATCH --gres=gpu:a100:1
-> #SBATCH --output=slurm-%j.out
-> #SBATCH --error=slurm-%j.err
-> 
-> #!/bin/bash
-> echo 'Hello from Slurm job on uva partition a100'
-> hostname
-> ```
-
-Upload and submit a script
-
-```bash
-cmc hpc slurm submit my_job.sh
-```
-> ```text
-> Submitted: 123456
-> ```
-
-Get detailed information about a specific job
-
-**6. Monitor and inspect jobs**
-```bash
-cmc hpc slurm job-info 123456
-```
-> ```text
-> JobId=123456 Partition=gpu Account=bii_dsc_community User=user State=RUNNING
-> CPU_ تعداد=1 NodeList=gpu-node-01 ...
-> ```
-
-Get status of a specific job
-
-```bash
-cmc hpc slurm status 123456
-```
-> ```text
-> JOBID   PARTITION  NAME     USER    ST  TIME  NODES
-> 123456  gpu        my_job   user    R   0:05  1
-> ```
-
-
-List all active jobs for the current user
-
-```bash
-cmc hpc slurm list
-```
-> ```text
-> JOBID   PARTITION  NAME     USER    ST  TIME  NODES
-> 123456  gpu        my_job   user    R   0:05  1
-> 123457  parallel   test_job user    PD  0:00  2
-> ```
-
-Wait for a job to complete
-
-```bash
-cmc hpc slurm wait 123456
-```
-> ```text
-> Waiting for job 123456 to complete...
-> Job 123456 is PENDING...
-> Job 123456 is currently RUNNING...
-> Job 123456 has finished (Status: COMPLETED).
-> ```
-
-**7. Logs and Resources**
-
-Read the output log of a job
-
-```bash
-cmc hpc slurm logs 123456
-```
-> ```text
-> Hello from Slurm job on uva partition a100
-> gpu-node-01
-> ```
-
-Check disk quota on the HPC
-
-```bash
-cmc hpc slurm quota
-```
-> ```text
-> Disk quotas for user:
-> Filesystem  blocks   quota   limit   grace
-> /home       100M     500M    500M    -
-> /scratch    10G      1T      1T      -
-> ```
-
-
-Check node status for a partition
-```bash
-cmc hpc slurm nodes --partition gpu
-```
-> ```text
-> PARTITION AVAIL  TIMELIMIT  NODES  STATE NODELIST
-> gpu       up     infinite   10     mix   gpu-node-[01-10]
-> ```
-
-**8. Directives & Cancellation**
-
-View Slurm directives for a partition key
-
-```bash
-cmc hpc slurm info a100
-```
-> ```text
-> Host       : uva
-> Partition  : a100
-> partition  : gpu
-> account    : bii_dsc_community
-> gres       : gpu:a100:1
-> ```
-
-Cancel a Slurm job
-
-```bash
-cmc hpc slurm cancel 123456
-```
-> ```text
-> Canceling job 123456...
-> ✓ Job 123456 cancelled.
-> ```
-
-### Configuration & Defaults
-
-**9. Set default host and partition**
+Set your default host and partition to avoid specifying them in every command:
 ```bash
 cmc hpc set-default --host uva --partition a100
-```
-> ```text
-> Default host set to uva and partition to a100
-> ```
-
-### Image & Storage Management
-
-**10. Build Apptainer images**
-```bash
-cmc hpc image build my_image.def
-```
-> ```text
-> Cloudmesh HPC Apptainer Build
-> Image name       : my_image.sif
-> Singularity cache: /scratch/user/.apptainer/
-> Definition       : my_image.def
-> 
-> Building image...
-> Time to build my_image.sif (2.4GB) 145s
-> ```
-
-**11. Check storage usage**
-```bash
-cmc hpc storage info /home/user/data
-```
-> ```text
-> Storage Info
-> ╭───────────┬──────╮
-> │ Directory │ Size │
-> ├───────────┼──────┤
-> │ /home/user/data │ 1.2G │
-> ╰───────────┴──────╯
-> ```
-
-### VPN & Remote Tools
-
-**12. Manage VPN connection**
-```bash
-cmc hpc vpn on
-```
-> ```text
-> ✓ Connected to uva
-> ```
-
-```bash
-cmc hpc vpn status
-```
-> ```text
-> True
-> ```
-
-**13. Remote Editing**
-```bash
-cmc hpc edit config.txt
-```
-> ```text
-> Editing config.txt with emacs...
-> ```
-
-**14. Jupyter Notebooks**
-```bash
-cmc hpc jupyter --port 8888
-```
-> ```text
-> Starting Jupyter on port 8888...
-> Note: This requires an active VPN connection.
-> Command: jupyter notebook --no-browser --port=8888
-> Tunnel: ssh -L 8888:localhost:8888 hpc
-> ```
-
-**15. Tutorials and Support**
-```bash
-cmc hpc tutorial pod
-```
-> ```text
-> Opening tutorial for pod: https://infomall.org/uva/docs/tutorial/pod
-> ```
-
-```bash
-cmc hpc ticket
-```
-> ```text
-> Opening support request form: https://www.rc.virginia.edu/form/support-request/
-> ```
-
-## Command Reference
-
-| Command | Description | Options |
-| :--- | :--- | :--- |
-| `info` | Show current configuration and available partitions | `[host]` |
-| `config` | Show hardware and queue configuration | |
-| `shell` | Enter an interactive shell for executing CMC commands | |
-| `ssh` | SSH into the HPC cluster (via login) | `<key>`, `--ui` |
-| `run` | Execute a one-off command on the HPC | `"command"` |
-| `login` | SSH into an interactive node | `<key>`, `--ui`, `--host`, `--sbatch` |
-| `slurm template` | Generate a boilerplate .sbatch script | `<key>` |
-| `slurm submit` | Upload and submit a Slurm job | `<file>`, `--key`, `--sbatch` |
-| `slurm job-info` | Get detailed information about a job | `<id>` |
-| `slurm status` | Get the current status of a job | `<id>` |
-| `slurm list` | List all active jobs for the current user | |
-| `slurm wait` | Block until a job completes with status updates | `<id>`, `--interval` |
-| `slurm monitor` | Actively monitor a job's progress | `<id>` |
-| `slurm logs` | Read or tail the output logs of a job | `<id>`, `--tail` |
-| `slurm quota` | Check disk quota on the HPC | |
-| `slurm nodes` | Check node status for a partition | `--partition` |
-| `slurm info` | View Slurm directives for a partition key | `<key>`, `--host` |
-| `slurm cancel` | Cancel a Slurm job | `<id>` |
-| `set-default` | Set default host and partition | `--host`, `--partition` |
-| `image build` | Build an Apptainer image from a definition file | `<file>` |
-| `storage info` | Get cleaned-up storage size for a directory | `<dir>` |
-| `edit` | Edit a remote file using a specified editor | `<file>`, `--editor` |
-| `vpn on/off` | Connect or disconnect from the VPN | |
-| `vpn info/status` | Show VPN connection details | |
-| `jupyter` | Setup a Jupyter notebook on the cluster | `--port` |
-| `tutorial` | Open HPC tutorials in the browser | `[keyword]` |
-| `ticket` | Open the support request form | |
-
-## Debugging
-
-Most commands support a `--debug` flag. When enabled, the tool will print the exact SSH commands it intends to execute without actually running them.
-
-Example:
-```bash
-cmc hpc slurm cancel 12345 --debug
 ```
 
 ---
 
-## Appendix: UVA Partition Table
+## Usage Guide
 
-The following table lists the partition keys used by `cloudmesh-ai-hpc` for the UVA host and their corresponding Slurm directives.
+### Connectivity & Remote Access
+
+#### VPN Management
+Many HPC resources require a VPN. Cloudmesh AI HPC integrates VPN control directly:
+```bash
+cmc hpc vpn on       # Connect to the HPC VPN
+cmc hpc vpn status   # Check if VPN is active
+cmc hpc vpn off      # Disconnect
+```
+
+#### Interactive Login
+You can SSH into an interactive node. Use the `--ui` flag to open a sophisticated visual selector:
+```bash
+# Interactive selection via Textual UI
+cmc hpc login --ui
+```
+**The Interactive UI features**:
+*   **Real-time Monitoring**: The table automatically updates "Idle Nodes" and "GPU Usage" every 30 seconds.
+*   **Dynamic GRES Adjustment**: Use `+` and `-` keys to increase or decrease the requested GPU count directly in the table.
+*   **Resource Verification**: Before final login, the tool verifies actual resource availability and displays a confirmation banner with the exact command to be executed.
+
+**Direct login to a specific partition**:
+```bash
+cmc hpc login a100
+```
+
+#### Remote Execution & Editing
+Run a command without entering a full shell, or edit a remote file using your preferred editor:
+```bash
+# Run a one-off command
+cmc hpc run "df -h /scratch/$USER"
+
+# Edit a remote file (defaults to emacs)
+cmc hpc edit my_script.py --editor vim
+```
+
+### Slurm Job Management
+
+#### Job Submission Workflow
+1. **Generate a template**:
+   ```bash
+   cmc hpc slurm template a100 > my_job.sh
+   ```
+2. **Edit your script** and add your logic.
+3. **Submit the job**:
+   ```bash
+   cmc hpc slurm submit my_job.sh
+   ```
+
+#### Advanced Submission
+You can override or add Slurm parameters at submission time using the `key:val` format:
+```bash
+cmc hpc slurm submit my_job.sh --sbatch "time:01:00:00,mem:16G"
+```
+
+#### Monitoring & Maintenance
+```bash
+cmc hpc slurm list            # List all your active jobs
+cmc hpc slurm status 123456   # Quick status of a specific job
+cmc hpc slurm job-info 123456 # Detailed scontrol output
+cmc hpc slurm wait 123456     # Block until job completes
+cmc hpc slurm logs 123456     # Read output logs
+cmc hpc slurm logs 123456 --tail # Tail output logs in real-time
+cmc hpc slurm cancel 123456   # Cancel a job
+```
+
+#### Cluster Monitoring & Reporting
+Get high-level insights into cluster health and usage:
+```bash
+# Node information and cluster summary
+cmc hpc sinfo --output summary
+
+# Get the current job queue
+cmc hpc squeue --search "node[01-10]"
+
+# Detailed usage reports for users, accounts, or partitions
+cmc hpc sreport --stat
+
+# Check GPU usage for a specific node or reservation
+cmc hpc slurm gpu-usage a100-node-01
+```
+
+### Image & Storage Management
+
+#### Apptainer Images
+Build container images directly on the HPC to ensure environment consistency:
+```bash
+cmc hpc image build my_env.def
+```
+
+#### Storage Checks
+Quickly check your disk usage or quota:
+```bash
+cmc hpc storage info /home/user/data
+cmc hpc slurm quota
+```
+
+### Jupyter Notebooks
+Launch a Jupyter server on the cluster:
+```bash
+cmc hpc jupyter --port 8888
+```
+*Note: This requires an active VPN connection and an SSH tunnel (the command output will provide the exact tunnel string).*
+
+### System Info & Support
+```bash
+cmc hpc config     # View hardware and queue specifications
+cmc hpc tutorial   # Open HPC tutorials in browser
+cmc hpc ticket     # Open support request form
+```
+
+---
+
+## Configuration & Customization
+
+Cloudmesh AI HPC uses a two-tier configuration system:
+1. **Base Config**: Packaged `partitions.yaml` containing standard cluster definitions.
+2. **Local Overrides**: Located at `~/.cloudmesh/hpc.yaml`.
+
+### Local Configuration Example
+You can define your own default host, partition, and **aliases** for complex sbatch parameters.
+
+Create `~/.cloudmesh/hpc.yaml`:
+```yaml
+cloudmesh:
+  ai:
+    default:
+      host: uva
+      partition: a100
+    # Aliases allow you to use a short name for a set of parameters
+    aliases:
+      heavy_gpu: "gres:gpu:a100:1,mem:80G,time:24:00:00"
+      light_gpu: "gres:gpu:v100:1,mem:16G,time:02:00:00"
+    # You can also add custom partitions or override existing ones
+    partition:
+      uva:
+        my-custom-partition:
+          partition: gpu
+          account: my_account
+          gres: gpu:a100:1
+```
+
+**Using an alias in a command**:
+```bash
+cmc hpc slurm submit my_job.sh --sbatch "heavy_gpu"
+```
+
+---
+
+## Command Reference
+
+| Command | Description | Key Options |
+| :--- | :--- | :--- |
+| `info` | Show config, available hosts, and partitions | `[key]` |
+| `config` | Show hardware and queue specifications | |
+| `login` | SSH into an interactive node | `--ui`, `--host`, `--sbatch` |
+| `run` | Execute a one-off remote command | `"command"` |
+| `slurm template` | Generate a `.sbatch` boilerplate | `[key]` |
+| `slurm submit` | Upload and submit a Slurm job | `--key`, `--sbatch` |
+| `slurm job-info` | Detailed job metadata | `<job_id>` |
+| `slurm status` | Current job state (R, PD, etc.) | `<job_id>` |
+| `slurm list` | List all active jobs for current user | |
+| `slurm wait` | Block until job finishes | `<job_id>`, `--interval` |
+| `slurm logs` | Read or tail job output logs | `<job_id>`, `--tail` |
+| `slurm quota` | Check disk quota | |
+| `slurm nodes` | Check node availability in partition | `--partition` |
+| `sinfo` | Get node information and cluster summary | `--output summary`, `--search` |
+| `squeue` | Get Slurm queue information | `--search`, `--output` |
+| `sreport` | Get Slurm usage reports | `--start`, `--end`, `--stat` |
+| `slurm gpu-usage` | Check GPU usage for node/reservation | `<target>` |
+| `slurm search-jobs` | Find jobs by node regex | `<node_regex>` |
+| `slurm cancel` | Terminate a Slurm job | `<job_id>` |
+| `set-default` | Set default host/partition in config | `--host`, `--partition` |
+| `image build` | Build Apptainer image from `.def` file | `<file>` |
+| `storage info` | Get directory size on HPC | `<dir>` |
+| `edit` | Edit remote file via SSH | `<file>`, `--editor` |
+| `vpn on/off` | Toggle VPN connection | |
+| `vpn status` | Check VPN connectivity | |
+| `jupyter` | Setup Jupyter notebook on cluster | `--port` |
+| `tutorial` | Open HPC tutorials in browser | `[keyword]` |
+| `ticket` | Open support request form | |
+
+---
+
+## Debugging & Troubleshooting
+
+### Using Debug Mode
+Almost every command supports the `--debug` flag. When enabled, the tool prints the exact SSH/Shell commands it intends to execute without actually running them. This is invaluable for verifying the generated Slurm directives.
+
+```bash
+cmc hpc slurm submit my_job.sh --debug
+```
+
+### Common Issues
+- **Permission Denied (publickey)**: Ensure your SSH keys are added to the HPC cluster and your local `ssh-agent` is running.
+- **VPN Connection Failed**: Check your network and ensure you have the necessary credentials for the VPN service.
+- **Job Pending (PD)**: Use `cmc hpc slurm job-info <id>` to see why a job is pending (e.g., waiting for resources or priority).
+- **Interactive UI not loading**: Ensure your terminal supports TUI applications (Textual).
+
+---
+
+## Appendix: UVA Partition Table
 
 | Key | Partition | Account | GRES / Constraint / Reservation |
 | :--- | :--- | :--- | :--- |
@@ -374,28 +255,3 @@ The following table lists the partition keys used by `cloudmesh-ai-hpc` for the 
 | `a100-pod` | gpu | bii_dsc_community | gpu:a100:1, constraint: gpupod |
 | `rtx2080` | gpu | bii_dsc_community | gpu:rtx2080:1 |
 | `rtx3090` | gpu | bii_dsc_community | gpu:rtx3090:1 |
-
-### The CMC Shell Abstraction
-
-The `cmc hpc` tool utilizes an internal shell abstraction to execute commands on the remote HPC cluster. This removes the need for users to manually manage SSH connections for simple queries or administrative tasks.
-
-**Why it is useful:**
-- **Host Abstraction**: You don't need to remember or type the remote hostname; the tool uses your configured default (e.g., `uva`).
-- **Consistency**: All HPC operations (checking quotas, monitoring jobs, reading logs) use this same underlying mechanism, ensuring consistent behavior and error handling.
-- **Transparency**: By using the `--debug` flag, you can see the exact shell command the tool is about to execute on the cluster.
-
-**Example:**
-Instead of manually running:
-```bash
-ssh uva 'df -h /scratch/your_user'
-```
-You can use:
-```bash
-cmc hpc run "df -h /scratch/your_user"
-```
-
-## Core Dependencies
-This project depends on the following core components of the Cloudmesh AI ecosystem:
-- [cloudmesh-ai-common](https://github.com/cloudmesh-ai/cloudmesh-ai-common)
-- [cloudmesh-ai-cmc](https://github.com/cloudmesh-ai/cloudmesh-ai-cmc)
-- [cloudmesh-ai-vpn](https://github.com/cloudmesh-ai/cloudmesh-ai-vpn)

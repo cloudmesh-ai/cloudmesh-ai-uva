@@ -1,0 +1,5 @@
+# Project Rules
+- You are running on a local Ollama instance (RTX 3090).
+- Be concise to save context window tokens.
+- When analyzing code, look for opportunities to use Python/CLI automation.
+- If you need to run heavy tasks, suggest shell scripts that can be executed via terminal.

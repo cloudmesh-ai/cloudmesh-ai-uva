@@ -1,22 +1,28 @@
 import os
 import sys
 import difflib
+import re
+import yaml
+import tempfile
+import time
 from cloudmesh.ai.common.io import console, load_yaml
+from cloudmesh.ai.slurm import Slurm
 from cloudmesh.ai.common.logging_utils import get_contextual_logger
 from cloudmesh.ai.common.stopwatch import StopWatch
 from cloudmesh.ai.common.Shell import Shell
+from cloudmesh.ai.common.ssh.base import SSHBase
 
 logger = get_contextual_logger("hpc")
 
 
 from typing import Dict, List, Tuple, Optional, Any
 
-class Hpc:
+class Hpc(SSHBase):
     def __init__(self, host: str = "uva", debug: bool = False) -> None:
         """
         Initialize the Hpc class.
         """
-        self.debug = debug
+        super().__init__(debug=debug)
         self.host = host
 
         # 1. Load base partitions from the package
@@ -118,8 +124,7 @@ class Hpc:
             msg = f"In directive searching for:\n  host {host}\n  key {key}\nNot found"
             if suggestion:
                 msg += f"\nDid you mean '{suggestion}'?"
-            console.error(msg)
-            sys.exit(1)
+            raise ValueError(msg)
 
         block = ""
         for k, v in directives.items():
@@ -156,18 +161,27 @@ class Hpc:
 
         return header, data
 
-    def get_partition_table_data(self, host: str) -> Tuple[Optional[str], Optional[List[Dict[str, str]]]]:
+    def get_partition_static_data(self, host: str) -> Tuple[Optional[str], Optional[List[Dict[str, Any]]]]:
         """
-        Prepare table-like data for interactive selection.
+        Prepare basic partition data for interactive selection.
         Returns a tuple of (header_string, choices_list).
         """
         header_list, data_list = self.get_partition_data(host)
         if not header_list or not data_list:
             return None, None
 
+        # Add resource columns to header (initially empty)
+        header_list = header_list + ["Idle Nodes", "GPU Usage (Avail/Used/Total)"]
+        
+        # Update data rows with placeholders for resource counts
+        updated_data = []
+        for row in data_list:
+            updated_row = row + ["...", "..."]
+            updated_data.append(updated_row)
+
         # Calculate column widths for alignment
         col_widths = {name: len(name) for name in header_list}
-        for row in data_list:
+        for row in updated_data:
             for i, val in enumerate(row):
                 col_widths[header_list[i]] = max(col_widths[header_list[i]], len(val))
 
@@ -176,13 +190,81 @@ class Hpc:
 
         # Create formatted rows as choices
         choices = []
-        # We need the original keys to map back to values
-        # The second column in data_list is the key
-        for row in data_list:
+        for row in updated_data:
             row_str = " | ".join([val.ljust(col_widths[header_list[i]]) for i, val in enumerate(row)])
             choices.append({"name": row_str, "value": row[1]})
 
         return header, choices
+
+    def get_partition_realtime_data(self, host: str) -> Dict[str, Dict[str, Any]]:
+        """
+        Fetch real-time resource availability for all partitions on the host.
+        Returns a map of partition_name -> resource_stats.
+        """
+        resource_map = {}
+        try:
+            # 1. Get all node states and GRES
+            sinfo_cmd = "sinfo -N -o \"%P %N %G %t\""
+            sinfo_output = self._run_remote(host, sinfo_cmd).stdout
+            
+            if not sinfo_output:
+                return resource_map
+
+            mix_nodes = []
+            node_data = []
+            for line in sinfo_output.strip().split("\n"):
+                parts = line.split()
+                if len(parts) < 4: continue
+                partitions, node, gres, state = parts[0].split(","), parts[1], parts[2], parts[3]
+                node_data.append((partitions, node, gres, state))
+                if state == "mix":
+                    mix_nodes.append(node)
+
+            node_allocations = {}
+            if mix_nodes:
+                nodes_list = ",".join(mix_nodes)
+                sctrl_cmd = f"scontrol show node {nodes_list}"
+                sctrl_output = self._run_remote(host, sctrl_cmd).stdout
+                
+                if sctrl_output:
+                    node_blocks = sctrl_output.split("NodeName=")[1:]
+                    for block in node_blocks:
+                        node_name = block.split()[0]
+                        alloc_match = re.search(r'AllocTRES=[^=]*gres/gpu=([^,\s]+)', block)
+                        if alloc_match:
+                            val = alloc_match.group(1)
+                            num_match = re.search(r'(\d+)$', val)
+                            node_allocations[node_name] = int(num_match.group(1)) if num_match else 1
+                        else:
+                            node_allocations[node_name] = 0
+
+            for partitions, node, gres, state in node_data:
+                if state in ["idle", "mix"]:
+                    total_gpus = 0
+                    if "gpu" in gres:
+                        # Match gpu:X or gpu:type:X
+                        match = re.search(r'gpu:([^:]*:)?(\d+)$', gres)
+                        total_gpus = int(match.group(2)) if match else 1
+                    
+                    if state == "idle":
+                        available_gpus, is_idle_node = total_gpus, True
+                    else: # state == "mix"
+                        used_gpus = node_allocations.get(node, 0)
+                        available_gpus, is_idle_node = max(0, total_gpus - used_gpus), False
+                    
+                    for p in partitions:
+                        if p not in resource_map:
+                            resource_map[p] = {"nodes": 0, "gpus": 0, "used_gpus": 0, "total_nodes": 0, "total_gpus": 0}
+                        if is_idle_node:
+                            resource_map[p]["nodes"] += 1
+                        resource_map[p]["gpus"] += available_gpus
+                        resource_map[p]["used_gpus"] += (total_gpus - available_gpus)
+                        resource_map[p]["total_nodes"] += 1
+                        resource_map[p]["total_gpus"] += total_gpus
+        except Exception as e:
+            console.error(f"Failed to fetch real-time resources: {e}")
+
+        return resource_map
 
 
     def get_default_partition(self, host: str) -> Optional[str]:
@@ -217,9 +299,8 @@ class Hpc:
 
     def get_config_path(self) -> str:
         """Return the path to the config.csv file."""
-        # The config.csv is located in the package root (one level up from src/cloudmesh/ai/)
-        # This is a more robust way to find it relative to this file
-        return os.path.join(os.path.dirname(__file__), "..", "config.csv")
+        # The config.csv is located in the same directory as this file
+        return os.path.join(os.path.dirname(__file__), "config.csv")
 
     def get_login_command(self, host: Optional[str], key: Optional[str], sbatch_params: Optional[Dict[str, str]] = None) -> Optional[str]:
         """Construct the SSH ijob command without executing it."""
@@ -238,17 +319,174 @@ class Hpc:
         parameters = "".join([f" --{k}={v}" for k, v in directives.items()])
         return f'ssh -tt {host} "/opt/rci/bin/ijob{parameters}"'
 
+    def get_node_gpu_usage(self, node_name: str) -> Dict[str, Any]:
+        """
+        Get the GPU usage for a specific node.
+        Returns a dictionary with total, used, and available GPUs.
+        """
+        cmd = f"scontrol show node {node_name}"
+        output = self.run_command(cmd)
+        
+        if not output:
+            return {"error": f"No output received for node {node_name}"}
+        
+        try:
+            # Parse CfgTRES for total GPUs
+            cfg_match = re.search(r'CfgTRES=[^=]*gres/gpu=([^,\s]+)', output)
+            total_gpus = 0
+            if cfg_match:
+                val = cfg_match.group(1)
+                num_match = re.search(r'(\d+)$', val)
+                total_gpus = int(num_match.group(1)) if num_match else 1
+            
+            # Parse AllocTRES for used GPUs
+            alloc_match = re.search(r'AllocTRES=[^=]*gres/gpu=([^,\s]+)', output)
+            used_gpus = 0
+            if alloc_match:
+                val = alloc_match.group(1)
+                num_match = re.search(r'(\d+)$', val)
+                used_gpus = int(num_match.group(1)) if num_match else 1
+            
+            return {
+                "node": node_name,
+                "total": total_gpus,
+                "used": used_gpus,
+                "available": max(0, total_gpus - used_gpus)
+            }
+        except Exception as e:
+            return {"error": f"Failed to parse GPU usage: {e}"}
+
+    def get_cluster_gpu_usage(self) -> List[Dict[str, Any]]:
+        """
+        Get GPU usage for all nodes across all partitions on the host.
+        Returns a list of nodes sorted by available GPUs (descending).
+        """
+        all_nodes_usage = []
+        resource_map = self.get_partition_realtime_data(self.host)
+        
+        # We need to get the actual node data. 
+        # get_partition_realtime_data already does the sinfo and scontrol calls.
+        # However, it aggregates by partition. We want a node-centric view.
+        
+        try:
+            # Re-run the sinfo command to get the raw node list
+            sinfo_cmd = "sinfo -N -o \"%P %N %G %t\""
+            sinfo_output = self._run_remote(self.host, sinfo_cmd).stdout
+            if not sinfo_output:
+                return []
+
+            # Get all mix nodes for scontrol lookup
+            mix_nodes = []
+            node_data = []
+            for line in sinfo_output.strip().split("\n"):
+                parts = line.split()
+                if len(parts) < 4: continue
+                partitions, node, gres, state = parts[0].split(","), parts[1], parts[2], parts[3]
+                node_data.append((partitions, node, gres, state))
+                if state == "mix":
+                    mix_nodes.append(node)
+
+            node_allocations = {}
+            if mix_nodes:
+                nodes_list = ",".join(mix_nodes)
+                sctrl_output = self._run_remote(self.host, f"scontrol show node {nodes_list}").stdout
+                if sctrl_output:
+                    node_blocks = sctrl_output.split("NodeName=")[1:]
+                    for block in node_blocks:
+                        node_name = block.split()[0]
+                        alloc_match = re.search(r'AllocTRES=[^=]*gres/gpu=([^,\s]+)', block)
+                        if alloc_match:
+                            val = alloc_match.group(1)
+                            num_match = re.search(r'(\d+)$', val)
+                            node_allocations[node_name] = int(num_match.group(1)) if num_match else 1
+                        else:
+                            node_allocations[node_name] = 0
+
+            for partitions, node, gres, state in node_data:
+                total_gpus = 0
+                if "gpu" in gres:
+                    match = re.search(r'gpu:([^:]*:)?(\d+)$', gres)
+                    total_gpus = int(match.group(2)) if match else 1
+                
+                if state == "idle":
+                    available_gpus = total_gpus
+                elif state == "mix":
+                    used_gpus = node_allocations.get(node, 0)
+                    available_gpus = max(0, total_gpus - used_gpus)
+                else:
+                    available_gpus = 0
+                
+                all_nodes_usage.append({
+                    "node": node,
+                    "partition": partitions[0], # Primary partition
+                    "total": total_gpus,
+                    "used": total_gpus - available_gpus,
+                    "available": available_gpus,
+                    "state": state
+                })
+        except Exception as e:
+            logger.error(f"Failed to get cluster GPU usage: {e}")
+
+        # Sort by available GPUs descending
+        return sorted(all_nodes_usage, key=lambda x: x["available"], reverse=True)
+
+    def get_reservation_gpu_usage(self, reservation_name: str) -> Dict[str, Any]:
+        """
+        Get the aggregate GPU usage for a Slurm reservation.
+        """
+        cmd = f"scontrol show reservation {reservation_name}"
+        output = self.run_command(cmd)
+        
+        if not output or "Invalid reservation" in output:
+            return {"error": f"Reservation {reservation_name} not found or no output received."}
+        
+        try:
+            # Find the Nodes=... part of the reservation output
+            nodes_match = re.search(r'Nodes=([^,\s]+)', output)
+            if not nodes_match:
+                return {"error": f"No nodes found for reservation {reservation_name}"}
+            
+            nodes_str = nodes_match.group(1)
+            # Slurm node lists can be complex (e.g., node[01-04,06])
+            # We use scontrol show node to expand them or just query the list
+            # A simpler way to get the expanded list is to use scontrol show node with the list
+            nodes_output = self.run_command(f"scontrol show node {nodes_str}")
+            
+            total_gpus = 0
+            used_gpus = 0
+            
+            # Split by NodeName= to process each node in the reservation
+            node_blocks = nodes_output.split("NodeName=")[1:]
+            for block in node_blocks:
+                # Total GPUs
+                cfg_match = re.search(r'CfgTRES=[^=]*gres/gpu=([^,\s]+)', block)
+                if cfg_match:
+                    val = cfg_match.group(1)
+                    num_match = re.search(r'(\d+)$', val)
+                    total_gpus += int(num_match.group(1)) if num_match else 1
+                
+                # Used GPUs
+                alloc_match = re.search(r'AllocTRES=[^=]*gres/gpu=([^,\s]+)', block)
+                if alloc_match:
+                    val = alloc_match.group(1)
+                    num_match = re.search(r'(\d+)$', val)
+                    used_gpus += int(num_match.group(1)) if num_match else 1
+            
+            return {
+                "reservation": reservation_name,
+                "total": total_gpus,
+                "used": used_gpus,
+                "available": max(0, total_gpus - used_gpus)
+            }
+        except Exception as e:
+            return {"error": f"Failed to parse reservation GPU usage: {e}"}
+
     def run_command(self, command: str, host: Optional[str] = None) -> str:
         """Execute an arbitrary command on the HPC."""
         target_host = host or self.host
-        full_command = f"ssh {target_host} '{command}'"
-        
-        if self.debug:
-            console.msg(f"Debug: {full_command}")
-        
         try:
-            result = Shell.run(full_command)
-            return result
+            result = self._run_remote(target_host, command)
+            return result.stdout
         except Exception as e:
             console.error(f"Failed to execute command on {target_host}: {e}")
             return ""
@@ -270,7 +508,10 @@ class Hpc:
         console.msg(command)
         if not self.debug:
             try:
-                Shell.run(command)
+                # Use os.system for interactive sessions to ensure the terminal 
+                # is connected directly to the process. Shell.run captures output,
+                # which causes interactive shells to hang.
+                os.system(command)
             except Exception as e:
                 console.error(f"Login failed: {e}")
         return ""
@@ -312,57 +553,98 @@ class Hpc:
 
     def cancel(self, job_id: str) -> str:
         """Cancel a Slurm job."""
-        command = f"ssh {self.host} 'scancel {job_id}'"
         console.msg(f"Canceling job {job_id}...")
-        if not self.debug:
-            try:
-                Shell.run(command)
-            except Exception as e:
-                console.error(f"Failed to cancel job {job_id}: {e}")
-        return ""
+        try:
+            result = self._run_remote(self.host, f"scancel {job_id}")
+            return result.stdout
+        except Exception as e:
+            console.error(f"Failed to cancel job {job_id}: {e}")
+            return ""
 
     def get_job_status(self, job_id: str) -> str:
         """Get the status of a specific Slurm job."""
-        command = f"ssh {self.host} 'squeue -j {job_id}'"
-        if self.debug:
-            console.msg(f"Debug: {command}")
-            return f"Job {job_id} status: Not executed (debug)"
         try:
-            return Shell.run(command)
+            result = self._run_remote(self.host, f"squeue -j {job_id}")
+            return result.stdout
         except Exception as e:
             console.error(f"Failed to get status for job {job_id}: {e}")
             return ""
 
     def list_jobs(self) -> str:
         """List all active Slurm jobs for the current user."""
-        command = f"ssh {self.host} 'squeue -u $USER'"
-        if self.debug:
-            console.msg(f"Debug: {command}")
-            return "Active jobs: Not executed (debug)"
         try:
-            return Shell.run(command)
+            result = self._run_remote(self.host, "squeue -u $USER")
+            return result.stdout
         except Exception as e:
             console.error(f"Failed to list jobs: {e}")
             return ""
 
+    def search_jobs_by_node(self, node_regex: str) -> List[Dict[str, str]]:
+        """
+        Find jobs running on nodes that match the given regex.
+        
+        Args:
+            node_regex: Regex to match node names.
+            
+        Returns:
+            A list of dictionaries containing detailed job information.
+        """
+        # Comprehensive format: User|JobID|Name|State|TimeUsed|TimeLeft|Node|CPUs|Memory|QOS|Partition
+        fmt = "%u|%i|%j|%T|%M|%L|%N|%C|%m|%q|%P"
+        cmd = f"squeue -o \"{fmt}\""
+        try:
+            result = self._run_remote(self.host, cmd)
+            output = result.stdout
+            if not output:
+                return []
+
+            matches = []
+            pattern = re.compile(node_regex)
+            
+            lines = output.strip().split("\n")
+            # Skip header
+            for line in lines[1:]:
+                if not line.strip():
+                    continue
+                parts = line.split("|")
+                if len(parts) < 11:
+                    continue
+                
+                # The node list is at index 6
+                node = parts[6]
+                if pattern.search(node):
+                    matches.append({
+                        "User": parts[0],
+                        "JobID": parts[1],
+                        "Name": parts[2],
+                        "State": parts[3],
+                        "TimeUsed": parts[4],
+                        "TimeLeft": parts[5],
+                        "Node": node,
+                        "CPUs": parts[7],
+                        "Memory": parts[8],
+                        "QOS": parts[9],
+                        "Partition": parts[10]
+                    })
+            return matches
+        except Exception as e:
+            console.error(f"Failed to search jobs by node: {e}")
+            return []
+
     def storage(self, directory: str) -> str:
         """Get storage information for a directory."""
-        command = f"ssh {self.host} 'du -sh {directory}'"
-        if self.debug:
-            console.msg(f"Debug: {command}")
-            return f"Storage info for {directory}: Not executed (debug)"
-        
         try:
-            result = Shell.run(command)
-            if result:
+            result = self._run_remote(self.host, f"du -sh {directory}")
+            if result.stdout:
                 # du -sh returns "size directory", we only want the size
-                return result.split()[0]
+                return result.stdout.split()[0]
         except Exception as e:
             console.error(f"Failed to get storage info for {directory}: {e}")
         return "unknown"
 
     def edit(self, filename: str, editor: str = "emacs") -> str:
         """Edit a file on the remote host."""
+        # For interactive editing, we still use Shell.run with -t to ensure a TTY
         command = f"ssh -t {self.host} '{editor} {filename}'"
         console.msg(f"Editing {filename} with {editor}...")
         if not self.debug:
@@ -403,7 +685,6 @@ class Hpc:
         try:
             os.makedirs(os.path.dirname(local_path), exist_ok=True)
             with open(local_path, "w") as f:
-                import yaml
                 yaml.dump(config, f)
             console.msg(f"Default host set to {host}" + (f" and partition to {partition}" if partition else ""))
         except Exception as e:
@@ -427,80 +708,197 @@ class Hpc:
             script_content = f.read()
         
         full_script = directives + script_content
+        
+        # Create a temporary local file to upload
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as tmp:
+            tmp.write(full_script)
+            tmp_path = tmp.name
+
         remote_script = f"/tmp/job_{os.path.basename(script_path)}"
         
-        # 3. Upload script
-        # Using a simple ssh command to write the file to avoid scp dependency issues
-        import base64
-        encoded_content = base64.b64encode(full_script.encode()).decode()
-        upload_cmd = f"ssh {host} 'echo {encoded_content} | base64 -d > {remote_script}'"
-        
-        if not self.debug:
-            Shell.run(upload_cmd)
-        else:
-            console.msg(f"Debug: {upload_cmd}")
+        try:
+            # 3. Upload script using Fabric put
+            self.put(tmp_path, remote_script, host)
+            
+            # 4. Submit job
+            result = self._run_remote(host, f"sbatch {remote_script}")
+            return result.stdout
+        except Exception as e:
+            console.error(f"Failed to submit job: {e}")
+            return ""
+        finally:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
 
-        # 4. Submit job
-        submit_cmd = f"ssh {host} 'sbatch {remote_script}'"
-        if not self.debug:
-            result = Shell.run(submit_cmd)
-            return result
-        else:
-            console.msg(f"Debug: {submit_cmd}")
-            return "Submitted (debug)"
-
-    def logs(self, job_id: str, tail: bool = False) -> str:
+    def logs(self, job_id: str, tail: bool = False, follow: bool = False) -> str:
         """Read the Slurm output logs for a job."""
-        # Slurm logs are typically slurm-<jobid>.out in the submission directory
-        # We assume the user is in the correct directory or the log is in home
-        cmd = f"ssh {self.host} 'tail -f slurm-{job_id}.out'" if tail else f"ssh {self.host} 'cat slurm-{job_id}.out'"
+        # Try to find the actual StdOut and StdErr paths from scontrol
+        stdout_path = f"slurm-{job_id}.out"
+        stderr_path = f"slurm-{job_id}.err"
         
-        if not self.debug:
-            return Shell.run(cmd)
+        info = self.job_info(job_id)
+        if info:
+            # Look for StdOut=/path/to/log
+            out_match = re.search(r'StdOut=([^\s]+)', info)
+            if out_match:
+                stdout_path = out_match.group(1)
+            
+            # Look for StdErr=/path/to/log
+            err_match = re.search(r'StdErr=([^\s]+)', info)
+            if err_match:
+                stderr_path = err_match.group(1)
+
+        if follow:
+            # Streaming mode: use tail -f
+            cmd = f"ssh -t {self.host} 'tail -f {stdout_path} {stderr_path}'"
+            if not self.debug:
+                console.banner(f"Streaming logs for job {job_id} (Out: {stdout_path}, Err: {stderr_path})")
+                os.system(cmd)
+                return ""
+            else:
+                console.msg(f"Debug: {cmd}")
+                return "Log output (debug)"
+        elif tail:
+            # Snapshot mode: use tail -n 20
+            for label, path in [("STDOUT", stdout_path), ("STDERR", stderr_path)]:
+                try:
+                    res = self._run_remote(self.host, f"tail -n 20 {path}")
+                    if res.stdout:
+                        console.banner(f"{label} (Last 20 lines)", path)
+                        console.print(res.stdout)
+                except Exception as e:
+                    console.error(f"Error reading {label} from {path}: {e}")
+            return ""
         else:
-            console.msg(f"Debug: {cmd}")
-            return "Log output (debug)"
+            # Full read mode: use cat
+            for label, path in [("STDOUT", stdout_path), ("STDERR", stderr_path)]:
+                try:
+                    res = self._run_remote(self.host, f"cat {path}")
+                    if res.stdout:
+                        console.banner(label, path)
+                        console.print(res.stdout)
+                except Exception as e:
+                    console.error(f"Error reading {label} from {path}: {e}")
+            
+            return ""
 
     def job_info(self, job_id: str) -> str:
         """Get detailed information about a Slurm job."""
-        cmd = f"ssh {self.host} 'scontrol show job {job_id}'"
-        if not self.debug:
-            return Shell.run(cmd)
-        else:
-            console.msg(f"Debug: {cmd}")
-            return "Job info (debug)"
+        try:
+            result = self._run_remote(self.host, f"scontrol show job {job_id}")
+            return result.stdout
+        except Exception as e:
+            console.error(f"Failed to get job info for {job_id}: {e}")
+            return ""
 
     def quota(self) -> str:
         """Check disk quota on the HPC."""
-        cmd = f"ssh {self.host} 'quota -s'"
-        if self.debug:
-            console.msg(f"Debug: {cmd}")
-            return "Quota info (debug)"
         try:
-            return Shell.run(cmd)
+            # Use hdquota as 'quota -s' fails on some HPC clusters (e.g., UVA)
+            result = self._run_remote(self.host, "hdquota")
+            return result.stdout
         except Exception as e:
             console.error(f"Failed to get quota: {e}")
             return ""
 
+    def get_billing_usage(self, username: Optional[str] = None) -> List[Dict[str, Any]]:
+        """
+        Get billing and core-hour usage using sreport.
+        """
+        # Use sreport for 'user' entity to get usage statistics
+        # We use the current user if none provided
+        user = username or os.environ.get("USER")
+        if not user:
+            return []
+        
+        try:
+            # sreport for user usage
+            return self.sreport(entity="user", filter_val=user)
+        except Exception as e:
+            logger.error(f"Failed to get billing usage for {user}: {e}")
+            return []
+
     def nodes(self, partition: Optional[str] = None) -> str:
         """Check node status for a partition."""
-        host = self.host
-        cmd = f"ssh {host} 'sinfo'"
+        cmd = "sinfo"
         if partition:
-            cmd = f"ssh {host} 'sinfo -p {partition}'"
+            cmd = f"sinfo -p {partition}"
         
-        if self.debug:
-            console.msg(f"Debug: {cmd}")
-            return "Node info (debug)"
         try:
-            return Shell.run(cmd)
+            result = self._run_remote(self.host, cmd)
+            return result.stdout
         except Exception as e:
             console.error(f"Failed to get node status: {e}")
             return ""
 
+    def sinfo(self, partition: Optional[str] = None, json_support: bool = False, format: str = "%all") -> List[Dict[str, Any]]:
+        """
+        Return sinfo output as a list of dictionaries, with summary metrics merged into each node.
+        Delegates to the Slurm class.
+        """
+        slurm = Slurm(host=self.host, debug=self.debug)
+        return slurm.sinfo(partition=partition, json_support=json_support, format=format)
+
+    def sreport(self, entity: str = "user", filter_val: Optional[str] = None, 
+                start: Optional[str] = None, end: Optional[str] = None, 
+                stat: bool = False) -> List[Dict[str, Any]]:
+        """
+        Get usage report using sreport for a specific entity.
+        Delegates to the Slurm class.
+        """
+        slurm = Slurm(host=self.host, debug=self.debug)
+        return slurm.sreport(entity=entity, filter_val=filter_val, start=start, end=end, stat=stat)
+
+    def check_resource_availability(self, key: str) -> Dict[str, Any]:
+        """
+        Check if resources are available for the given partition key.
+        Returns with availability details.
+        """
+        host = self.host
+        try:
+            # Get the actual Slurm partition name from the key
+            partition_name = self.directive[host][key].get("partition")
+            if not partition_name:
+                return {"error": "Partition name not found for key"}
+
+            # Run sinfo to get node status, GRES, and state
+            # %N: Node list, %G: Generic Resources (GRES), %t: State
+            cmd = f"sinfo -p {partition_name} -N -o \"%N %G %t\""
+            result = self._run_remote(host, cmd)
+            output = result.stdout
+            
+            if not output:
+                return {"error": "No nodes found in partition"}
+
+            lines = output.strip().split("\n")
+            idle_nodes = []
+            all_nodes = []
+            
+            for line in lines:
+                parts = line.split()
+                if len(parts) < 3:
+                    continue
+                
+                node, gres, state = parts[0], parts[1], parts[2]
+                node_info = {"node": node, "gres": gres, "state": state}
+                all_nodes.append(node_info)
+                
+                # 'idle' means completely free, 'mix' means partially used
+                if state == "idle":
+                    idle_nodes.append(node_info)
+
+            return {
+                "partition": partition_name,
+                "total_nodes": len(all_nodes),
+                "idle_nodes": len(idle_nodes),
+                "idle_details": idle_nodes,
+                "all_details": all_nodes
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
     def wait(self, job_id: str, interval: int = 30) -> bool:
         """Wait for a Slurm job to complete with detailed status updates."""
-        import time
         console.msg(f"Waiting for job {job_id} to complete...")
         while True:
             status = self.get_job_status(job_id)
@@ -525,6 +923,43 @@ class Hpc:
             self.wait(job_id, interval)
         except KeyboardInterrupt:
             console.msg("Monitoring stopped by user.")
+
+    def check(self) -> None:
+        """Perform a health check of the HPC environment."""
+        from cloudmesh.ai.vpn.vpn import Vpn
+        
+        console.banner("HPC Health Check")
+        
+        # 1. VPN Check
+        try:
+            vpn = Vpn(service="hpc")
+            vpn_ok = vpn.enabled()
+            status_vpn = "[green]✓[/green]" if vpn_ok else "[red]✗[/red]"
+            console.print(f"{status_vpn} VPN Connected")
+        except Exception as e:
+            console.print(f"[red]✗[/red] VPN Check Failed: {e}")
+
+        # 2. SSH Check
+        try:
+            res = self._run_remote(self.host, "hostname")
+            if res.stdout:
+                console.print(f"[green]✓[/green] SSH Access Verified ({res.stdout.strip()})")
+            else:
+                console.print(f"[red]✗[/red] SSH Access: No response from host")
+        except Exception as e:
+            console.print(f"[red]✗[/red] SSH Access Failed: {e}")
+
+        # 3. Quota Check
+        try:
+            q = self.quota()
+            if q:
+                console.print(f"[green]✓[/green] Disk Quota Accessible")
+            else:
+                console.print(f"[yellow]⚠[/yellow] Disk Quota: No data returned")
+        except Exception as e:
+            console.print(f"[red]✗[/red] Disk Quota Check Failed: {e}")
+        
+        console.print()
 
     def template(self, key: Optional[str] = None) -> str:
         """Generate a boilerplate .sbatch script."""
