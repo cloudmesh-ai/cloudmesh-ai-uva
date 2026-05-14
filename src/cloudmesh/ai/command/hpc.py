@@ -603,7 +603,8 @@ def slurm_list(debug: bool) -> None:
 
 @slurm_group.command(name="monitor")
 @click.option("--debug", is_flag=True, help="Enable debug mode")
-def slurm_monitor(debug: bool) -> None:
+@click.pass_context
+def slurm_monitor(ctx, debug: bool) -> None:
     """Interactively monitor Slurm jobs."""
     hpc = Hpc(debug=debug)
     app = JobMonitorApp(hpc)
@@ -619,7 +620,7 @@ def slurm_monitor(debug: bool) -> None:
             console.msg(f"Job {job_id} cancelled.")
     else:
         # Result is a job_id, view logs
-        slurm_logs(job_id=result, tail=False, follow=True)
+        ctx.invoke(slurm_logs, job_id=result, tail=False, follow=True)
 
 
 @slurm_group.command(name="search-jobs")
@@ -677,15 +678,15 @@ class JobMonitorApp(App):
         height: 10;
     }
     Footer {
-        background: #dddddd;
-        color: #333333;
+        background: #000000;
+        color: #ffffff;
     }
     """
     BINDINGS = [
-        ("q", "quit", "Quit"),
-        ("l", "view_logs", "Logs"),
-        ("c", "cancel_job", "Cancel"),
-        ("r", "refresh", "Refresh"),
+        ("q", "quit", "- Quit"),
+        ("l", "view_logs", "- View Logs"),
+        ("c", "cancel_job", "- Cancel Job"),
+        ("r", "refresh", "- Refresh List"),
     ]
 
     def __init__(self, hpc_instance):
@@ -707,26 +708,37 @@ class JobMonitorApp(App):
 
     def update_job_table(self) -> None:
         table = self.query_one(DataTable)
-        # Get jobs as a string from hpc.list_jobs()
-        # Since list_jobs returns a string (squeue output), we parse it
-        output = self.hpc.list_jobs()
-        if not output:
-            return
+        try:
+            # Get jobs as a string from hpc.list_jobs()
+            output = self.hpc.list_jobs()
+            if not output or not output.strip():
+                return
 
-        lines = output.strip().split("\n")
-        if len(lines) < 2:
-            return
+            lines = output.strip().split("\n")
+            if len(lines) < 2:
+                return
 
-        header = lines[0].split()
-        rows = [line.split() for line in lines[1:]]
-
-        # Clear and rebuild table
-        table.clear()
-        table.add_columns(*header)
-        for row in rows:
-            # Use JobID (usually index 3 in squeue) as key
-            job_id = row[3] if len(row) > 3 else row[0]
-            table.add_row(*row, key=job_id)
+            # squeue output is typically fixed-width. 
+            # We use split() for simplicity, but we must be careful with indices.
+            header = lines[0].split()
+            
+            # Clear rows
+            table.clear()
+            
+            # Only add columns if they haven't been added yet
+            if not table.columns:
+                table.add_columns(*header)
+            
+            for line in lines[1:]:
+                row = line.split()
+                if not row:
+                    continue
+                
+                # In standard squeue, JOBID is the first column (index 0)
+                job_id = row[0]
+                table.add_row(*row, key=job_id)
+        except Exception as e:
+            self.query_one("#details-panel", Static).update(f"Error updating jobs: {e}")
 
     def on_mount(self) -> None:
         table = self.query_one(DataTable)
