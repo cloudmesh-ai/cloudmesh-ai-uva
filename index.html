@@ -1,0 +1,1433 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="assets/favicon.ico">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Cloudmesh AI Hpc</title>
+      
+    
+    
+      <link rel="stylesheet" href="assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="css/custom.css">
+    
+    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#cloudmesh-ai-hpc" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="." title="Cloudmesh AI Hpc" class="md-header__button md-logo" aria-label="Cloudmesh AI Hpc" data-md-component="logo">
+      
+  <img src="assets/logo-white.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Cloudmesh AI Hpc
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Cloudmesh AI HPC
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="." title="Cloudmesh AI Hpc" class="md-nav__button md-logo" aria-label="Cloudmesh AI Hpc" data-md-component="logo">
+      
+  <img src="assets/logo-white.png" alt="logo">
+
+    </a>
+    Cloudmesh AI Hpc
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="README.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Project
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="CHANGELOG.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="update.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Update
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Documentation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Documentation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="user.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="io.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    IO
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="logging.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Logging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="stopwatch.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Stopwatch
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="sys.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="telemetry.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Telemetry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="time.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Time
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="aggregation.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Aggregation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="api.html" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#getting-started" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Getting Started
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Getting Started">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Installation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-first-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. First Steps
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage Guide
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Usage Guide">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#connectivity-remote-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Connectivity &amp; Remote Access
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Connectivity &amp; Remote Access">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#vpn-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        VPN Management
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interactive-login" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interactive Login
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#remote-execution-editing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remote Execution &amp; Editing
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#slurm-job-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Slurm Job Management
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Slurm Job Management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#job-submission-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Job Submission Workflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#advanced-submission" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advanced Submission
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#monitoring-maintenance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring &amp; Maintenance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cluster-monitoring-reporting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cluster Monitoring &amp; Reporting
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#image-storage-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Image &amp; Storage Management
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Image &amp; Storage Management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#apptainer-images" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Apptainer Images
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#storage-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Storage Checks
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#jupyter-notebooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Jupyter Notebooks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#system-info-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System Info &amp; Support
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-customization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration &amp; Customization
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration &amp; Customization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#local-configuration-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local Configuration Example
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#command-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Command Reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#debugging-troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Debugging &amp; Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Debugging &amp; Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#using-debug-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using Debug Mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#common-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#appendix-uva-partition-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Appendix: UVA Partition Table
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="cloudmesh-ai-hpc">Cloudmesh AI HPC</h1>
+<p><strong>Authors</strong>:
+*   <strong>Gregor von Laszewski</strong> (<a href="mailto:laszewski@gmail.com">laszewski@gmail.com</a>)</p>
+<p>Cloudmesh AI HPC is a powerful CLI tool designed to simplify access and management of resources on High Performance Computing (HPC) clusters, with primary support for the University of Virginia (UVA) Rivanna cluster. It abstracts the complexity of Slurm job submission, Apptainer image management, and remote cluster interaction into a streamlined set of commands.</p>
+<h2 id="getting-started">Getting Started</h2>
+<h3 id="1-installation">1. Installation</h3>
+<p><strong>Recommended: Using pipx</strong>
+For the best experience with CLI tools, use <code>pipx</code> to install <code>cloudmesh-ai-hpc</code> in an isolated environment.</p>
+<pre><code class="language-bash">pipx install cloudmesh-ai-hpc
+# Or from a local directory:
+pipx install .
+</code></pre>
+<p><strong>Using pip</strong></p>
+<pre><code class="language-bash">pip install cloudmesh-ai-hpc
+# Or from a local directory:
+pip install .
+</code></pre>
+<h3 id="2-first-steps">2. First Steps</h3>
+<p>Start by checking your current configuration and available HPC partitions:</p>
+<pre><code class="language-bash">cmc hpc info
+</code></pre>
+<p>Set your default host and partition to avoid specifying them in every command:</p>
+<pre><code class="language-bash">cmc hpc set-default --host uva --partition a100
+</code></pre>
+<hr />
+<h2 id="usage-guide">Usage Guide</h2>
+<h3 id="connectivity-remote-access">Connectivity &amp; Remote Access</h3>
+<h4 id="vpn-management">VPN Management</h4>
+<p>Many HPC resources require a VPN. Cloudmesh AI HPC integrates VPN control directly:</p>
+<pre><code class="language-bash">cmc hpc vpn on       # Connect to the HPC VPN
+cmc hpc vpn status   # Check if VPN is active
+cmc hpc vpn off      # Disconnect
+</code></pre>
+<h4 id="interactive-login">Interactive Login</h4>
+<p>You can SSH into an interactive node. Use the <code>--ui</code> flag to open a sophisticated visual selector:</p>
+<pre><code class="language-bash"># Interactive selection via Textual UI
+cmc hpc login --ui
+</code></pre>
+<p><strong>The Interactive UI features</strong>:
+*   <strong>Real-time Monitoring</strong>: The table automatically updates "Idle Nodes" and "GPU Usage" every 30 seconds.
+*   <strong>Dynamic GRES Adjustment</strong>: Use <code>+</code> and <code>-</code> keys to increase or decrease the requested GPU count directly in the table.
+*   <strong>Resource Verification</strong>: Before final login, the tool verifies actual resource availability and displays a confirmation banner with the exact command to be executed.</p>
+<p><strong>Direct login to a specific partition</strong>:</p>
+<pre><code class="language-bash">cmc hpc login a100
+</code></pre>
+<h4 id="remote-execution-editing">Remote Execution &amp; Editing</h4>
+<p>Run a command without entering a full shell, or edit a remote file using your preferred editor:</p>
+<pre><code class="language-bash"># Run a one-off command
+cmc hpc run &quot;df -h /scratch/$USER&quot;
+
+# Edit a remote file (defaults to emacs)
+cmc hpc edit my_script.py --editor vim
+</code></pre>
+<h3 id="slurm-job-management">Slurm Job Management</h3>
+<h4 id="job-submission-workflow">Job Submission Workflow</h4>
+<ol>
+<li><strong>Generate a template</strong>:
+   <code>bash
+   cmc hpc slurm template a100 &gt; my_job.sh</code></li>
+<li><strong>Edit your script</strong> and add your logic.</li>
+<li><strong>Submit the job</strong>:
+   <code>bash
+   cmc hpc slurm submit my_job.sh</code></li>
+</ol>
+<h4 id="advanced-submission">Advanced Submission</h4>
+<p>You can override or add Slurm parameters at submission time using the <code>key:val</code> format:</p>
+<pre><code class="language-bash">cmc hpc slurm submit my_job.sh --sbatch &quot;time:01:00:00,mem:16G&quot;
+</code></pre>
+<h4 id="monitoring-maintenance">Monitoring &amp; Maintenance</h4>
+<pre><code class="language-bash">cmc hpc slurm list            # List all your active jobs
+cmc hpc slurm status 123456   # Quick status of a specific job
+cmc hpc slurm job-info 123456 # Detailed scontrol output
+cmc hpc slurm wait 123456     # Block until job completes
+cmc hpc slurm logs 123456     # Read output logs
+cmc hpc slurm logs 123456 --tail # Tail output logs in real-time
+cmc hpc slurm cancel 123456   # Cancel a job
+</code></pre>
+<h4 id="cluster-monitoring-reporting">Cluster Monitoring &amp; Reporting</h4>
+<p>Get high-level insights into cluster health and usage:</p>
+<pre><code class="language-bash"># Node information and cluster summary
+cmc hpc sinfo --output summary
+
+# Get the current job queue
+cmc hpc squeue --search &quot;node[01-10]&quot;
+
+# Detailed usage reports for users, accounts, or partitions
+cmc hpc sreport --stat
+
+# Check GPU usage for a specific node or reservation
+cmc hpc slurm gpu-usage a100-node-01
+</code></pre>
+<h3 id="image-storage-management">Image &amp; Storage Management</h3>
+<h4 id="apptainer-images">Apptainer Images</h4>
+<p>Build container images directly on the HPC to ensure environment consistency:</p>
+<pre><code class="language-bash">cmc hpc image build my_env.def
+</code></pre>
+<h4 id="storage-checks">Storage Checks</h4>
+<p>Quickly check your disk usage or quota:</p>
+<pre><code class="language-bash">cmc hpc storage info /home/user/data
+cmc hpc slurm quota
+</code></pre>
+<h3 id="jupyter-notebooks">Jupyter Notebooks</h3>
+<p>Launch a Jupyter server on the cluster:</p>
+<pre><code class="language-bash">cmc hpc jupyter --port 8888
+</code></pre>
+<p><em>Note: This requires an active VPN connection and an SSH tunnel (the command output will provide the exact tunnel string).</em></p>
+<h3 id="system-info-support">System Info &amp; Support</h3>
+<pre><code class="language-bash">cmc hpc config     # View hardware and queue specifications
+cmc hpc tutorial   # Open HPC tutorials in browser
+cmc hpc ticket     # Open support request form
+</code></pre>
+<hr />
+<h2 id="configuration-customization">Configuration &amp; Customization</h2>
+<p>Cloudmesh AI HPC uses a two-tier configuration system:
+1. <strong>Base Config</strong>: Packaged <code>partitions.yaml</code> containing standard cluster definitions.
+2. <strong>Local Overrides</strong>: Located at <code>~/.cloudmesh/hpc.yaml</code>.</p>
+<h3 id="local-configuration-example">Local Configuration Example</h3>
+<p>You can define your own default host, partition, and <strong>aliases</strong> for complex sbatch parameters.</p>
+<p>Create <code>~/.cloudmesh/hpc.yaml</code>:</p>
+<pre><code class="language-yaml">cloudmesh:
+  ai:
+    default:
+      host: uva
+      partition: a100
+    # Aliases allow you to use a short name for a set of parameters
+    aliases:
+      heavy_gpu: &quot;gres:gpu:a100:1,mem:80G,time:24:00:00&quot;
+      light_gpu: &quot;gres:gpu:v100:1,mem:16G,time:02:00:00&quot;
+    # You can also add custom partitions or override existing ones
+    partition:
+      uva:
+        my-custom-partition:
+          partition: gpu
+          account: my_account
+          gres: gpu:a100:1
+</code></pre>
+<p><strong>Using an alias in a command</strong>:</p>
+<pre><code class="language-bash">cmc hpc slurm submit my_job.sh --sbatch &quot;heavy_gpu&quot;
+</code></pre>
+<hr />
+<h2 id="command-reference">Command Reference</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Command</th>
+<th style="text-align: left;">Description</th>
+<th style="text-align: left;">Key Options</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>info</code></td>
+<td style="text-align: left;">Show config, available hosts, and partitions</td>
+<td style="text-align: left;"><code>[key]</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>config</code></td>
+<td style="text-align: left;">Show hardware and queue specifications</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>login</code></td>
+<td style="text-align: left;">SSH into an interactive node</td>
+<td style="text-align: left;"><code>--ui</code>, <code>--host</code>, <code>--sbatch</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>run</code></td>
+<td style="text-align: left;">Execute a one-off remote command</td>
+<td style="text-align: left;"><code>"command"</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>slurm template</code></td>
+<td style="text-align: left;">Generate a <code>.sbatch</code> boilerplate</td>
+<td style="text-align: left;"><code>[key]</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>slurm submit</code></td>
+<td style="text-align: left;">Upload and submit a Slurm job</td>
+<td style="text-align: left;"><code>--key</code>, <code>--sbatch</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>slurm job-info</code></td>
+<td style="text-align: left;">Detailed job metadata</td>
+<td style="text-align: left;"><code>&lt;job_id&gt;</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>slurm status</code></td>
+<td style="text-align: left;">Current job state (R, PD, etc.)</td>
+<td style="text-align: left;"><code>&lt;job_id&gt;</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>slurm list</code></td>
+<td style="text-align: left;">List all active jobs for current user</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>slurm wait</code></td>
+<td style="text-align: left;">Block until job finishes</td>
+<td style="text-align: left;"><code>&lt;job_id&gt;</code>, <code>--interval</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>slurm logs</code></td>
+<td style="text-align: left;">Read or tail job output logs</td>
+<td style="text-align: left;"><code>&lt;job_id&gt;</code>, <code>--tail</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>slurm quota</code></td>
+<td style="text-align: left;">Check disk quota</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>slurm nodes</code></td>
+<td style="text-align: left;">Check node availability in partition</td>
+<td style="text-align: left;"><code>--partition</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>sinfo</code></td>
+<td style="text-align: left;">Get node information and cluster summary</td>
+<td style="text-align: left;"><code>--output summary</code>, <code>--search</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>squeue</code></td>
+<td style="text-align: left;">Get Slurm queue information</td>
+<td style="text-align: left;"><code>--search</code>, <code>--output</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>sreport</code></td>
+<td style="text-align: left;">Get Slurm usage reports</td>
+<td style="text-align: left;"><code>--start</code>, <code>--end</code>, <code>--stat</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>slurm gpu-usage</code></td>
+<td style="text-align: left;">Check GPU usage for node/reservation</td>
+<td style="text-align: left;"><code>&lt;target&gt;</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>slurm search-jobs</code></td>
+<td style="text-align: left;">Find jobs by node regex</td>
+<td style="text-align: left;"><code>&lt;node_regex&gt;</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>slurm cancel</code></td>
+<td style="text-align: left;">Terminate a Slurm job</td>
+<td style="text-align: left;"><code>&lt;job_id&gt;</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>set-default</code></td>
+<td style="text-align: left;">Set default host/partition in config</td>
+<td style="text-align: left;"><code>--host</code>, <code>--partition</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>image build</code></td>
+<td style="text-align: left;">Build Apptainer image from <code>.def</code> file</td>
+<td style="text-align: left;"><code>&lt;file&gt;</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>storage info</code></td>
+<td style="text-align: left;">Get directory size on HPC</td>
+<td style="text-align: left;"><code>&lt;dir&gt;</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>edit</code></td>
+<td style="text-align: left;">Edit remote file via SSH</td>
+<td style="text-align: left;"><code>&lt;file&gt;</code>, <code>--editor</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>vpn on/off</code></td>
+<td style="text-align: left;">Toggle VPN connection</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>vpn status</code></td>
+<td style="text-align: left;">Check VPN connectivity</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>jupyter</code></td>
+<td style="text-align: left;">Setup Jupyter notebook on cluster</td>
+<td style="text-align: left;"><code>--port</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>tutorial</code></td>
+<td style="text-align: left;">Open HPC tutorials in browser</td>
+<td style="text-align: left;"><code>[keyword]</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>ticket</code></td>
+<td style="text-align: left;">Open support request form</td>
+<td style="text-align: left;"></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="debugging-troubleshooting">Debugging &amp; Troubleshooting</h2>
+<h3 id="using-debug-mode">Using Debug Mode</h3>
+<p>Almost every command supports the <code>--debug</code> flag. When enabled, the tool prints the exact SSH/Shell commands it intends to execute without actually running them. This is invaluable for verifying the generated Slurm directives.</p>
+<pre><code class="language-bash">cmc hpc slurm submit my_job.sh --debug
+</code></pre>
+<h3 id="common-issues">Common Issues</h3>
+<ul>
+<li><strong>Permission Denied (publickey)</strong>: Ensure your SSH keys are added to the HPC cluster and your local <code>ssh-agent</code> is running.</li>
+<li><strong>VPN Connection Failed</strong>: Check your network and ensure you have the necessary credentials for the VPN service.</li>
+<li><strong>Job Pending (PD)</strong>: Use <code>cmc hpc slurm job-info &lt;id&gt;</code> to see why a job is pending (e.g., waiting for resources or priority).</li>
+<li><strong>Interactive UI not loading</strong>: Ensure your terminal supports TUI applications (Textual).</li>
+</ul>
+<hr />
+<h2 id="appendix-uva-partition-table">Appendix: UVA Partition Table</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Key</th>
+<th style="text-align: left;">Partition</th>
+<th style="text-align: left;">Account</th>
+<th style="text-align: left;">GRES / Constraint / Reservation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>parallel</code></td>
+<td style="text-align: left;">parallel</td>
+<td style="text-align: left;">bii_dsc_community</td>
+<td style="text-align: left;">nodes: 2, ntask-per-node: 4</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>v100</code></td>
+<td style="text-align: left;">bii-gpu</td>
+<td style="text-align: left;">bii_dsc_community</td>
+<td style="text-align: left;">gpu:v100:1</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>a100</code></td>
+<td style="text-align: left;">gpu</td>
+<td style="text-align: left;">bii_dsc_community</td>
+<td style="text-align: left;">gpu:a100:1</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>a100-80gb</code></td>
+<td style="text-align: left;">gpu</td>
+<td style="text-align: left;">bii_dsc_community</td>
+<td style="text-align: left;">gpu:a100:1, constraint: a100_80gb</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>a100-dgx</code></td>
+<td style="text-align: left;">bii-gpu</td>
+<td style="text-align: left;">bii_dsc_community</td>
+<td style="text-align: left;">gpu:a100:1, reservation: bi_fox_dgx</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>k80</code></td>
+<td style="text-align: left;">gpu</td>
+<td style="text-align: left;">bii_dsc_community</td>
+<td style="text-align: left;">gpu:k80:1</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>p100</code></td>
+<td style="text-align: left;">gpu</td>
+<td style="text-align: left;">bii_dsc_community</td>
+<td style="text-align: left;">gpu:p100:1</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>a6000</code></td>
+<td style="text-align: left;">gpu</td>
+<td style="text-align: left;">bii_dsc_community</td>
+<td style="text-align: left;">gpu:a6000:1</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>a100-pod</code></td>
+<td style="text-align: left;">gpu</td>
+<td style="text-align: left;">bii_dsc_community</td>
+<td style="text-align: left;">gpu:a100:1, constraint: gpupod</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>rtx2080</code></td>
+<td style="text-align: left;">gpu</td>
+<td style="text-align: left;">bii_dsc_community</td>
+<td style="text-align: left;">gpu:rtx2080:1</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>rtx3090</code></td>
+<td style="text-align: left;">gpu</td>
+<td style="text-align: left;">bii_dsc_community</td>
+<td style="text-align: left;">gpu:rtx3090:1</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": [], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
