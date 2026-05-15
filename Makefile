@@ -12,7 +12,7 @@ VERSION_FILE := VERSION
 GIT          := git
 PYENVVERSION := $(shell pyenv version-name)
 
-.PHONY: help install clean build test reinstall check tag release \
+.PHONY: help install clean build test reinstall check tag release \ view
          test-html test-cov setup-test uninstall-all tmp-setup sync doc
 
 help:
@@ -31,6 +31,7 @@ help:
 	@echo "  release       - Full Production Cycle: upload + tag"
 	@echo "  sync          - Sync changed .py files to remote server"
 	@echo "  doc           - Build documentation locally"
+	@echo "  view          - Preview documentation locally"
 	@echo
 # --- DEVELOPMENT & TESTING ---
 
@@ -81,6 +82,9 @@ release: upload tag
 doc:
 	mkdocs build
 
+
+view:
+	mkdocs serve
 # --- REMOTE SYNC ---
 
 sync:
