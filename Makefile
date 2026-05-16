@@ -83,7 +83,7 @@ doc:
 
 
 view:
-	mkdocs serve
+	mkdocs serve --livereload
 # --- REMOTE SYNC ---
 
 sync:
