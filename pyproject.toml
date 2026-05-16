@@ -23,6 +23,7 @@ dependencies = [
     "cloudmesh-ai-vpn",
     "click",
     "pyyaml",
+    "cloudmesh-ai-theme",
 ]
 
 [project.optional-dependencies]
